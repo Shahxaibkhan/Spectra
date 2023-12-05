@@ -1,0 +1,94 @@
+Event Statistics:
+
+Event Name: Dispose
+  Occurrence Count: 161
+  Average Processing Time: 2.823 milliseconds
+
+Event Name: Disposed
+  Occurrence Count: 120
+  Average Processing Time: 3.044 milliseconds
+
+Event Name: Resume
+  Occurrence Count: 3
+  Average Processing Time: 1.961 milliseconds
+
+Event Name: Resumed
+  Occurrence Count: 3
+  Average Processing Time: 0.400 milliseconds
+
+Event Name: Terminate
+  Occurrence Count: 106
+  Average Processing Time: 2.937 milliseconds
+
+Event Name: Terminated
+  Occurrence Count: 97
+  Average Processing Time: 2.390 milliseconds
+
+Event Name: Connect
+  Occurrence Count: 128
+  Average Processing Time: 2.560 milliseconds
+
+Event Name: Connected
+  Occurrence Count: 128
+  Average Processing Time: 2.895 milliseconds
+
+Event Name: Provision
+  Occurrence Count: 85
+  Average Processing Time: 2.776 milliseconds
+
+Event Name: Provisioned
+  Occurrence Count: 85
+  Average Processing Time: 2.726 milliseconds
+
+Event Name: Routed
+  Occurrence Count: 54
+  Average Processing Time: 2.782 milliseconds
+
+Event Name: Assign
+  Occurrence Count: 102
+  Average Processing Time: 3.000 milliseconds
+
+Event Name: Assigned
+  Occurrence Count: 102
+  Average Processing Time: 2.363 milliseconds
+
+Event Name: Created
+  Occurrence Count: 93
+  Average Processing Time: 2.629 milliseconds
+
+Event Name: Held
+  Occurrence Count: 29
+  Average Processing Time: 2.254 milliseconds
+
+Event Name: Hold
+  Occurrence Count: 29
+  Average Processing Time: 2.586 milliseconds
+
+Event Name: Route
+  Occurrence Count: 53
+  Average Processing Time: 2.307 milliseconds
+
+Event Name: Merged
+  Occurrence Count: 16
+  Average Processing Time: 3.147 milliseconds
+
+Event Name: Transferred
+  Occurrence Count: 13
+  Average Processing Time: 1.947 milliseconds
+
+Event Name: Transfer
+  Occurrence Count: 4
+  Average Processing Time: 2.563 milliseconds
+
+Event Name: Reroute
+  Occurrence Count: 5
+  Average Processing Time: 3.607 milliseconds
+
+Event Name: IgnoreAudit
+  Occurrence Count: 1
+  Average Processing Time: 4.263 milliseconds
+
+Event Name: IgnoredAudit
+  Occurrence Count: 1
+  Average Processing Time: 4.625 milliseconds
+

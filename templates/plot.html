@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>S.P.E.C.T.R.A. - Event Statistics Plot</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            text-align: center;
+            padding: 20px;
+        }
+        h1 {
+            color: #333;
+        }
+        img {
+            max-width: 100%;
+            height: auto;
+        }
+        table {
+            width: 80%;
+            margin: 20px auto;
+            border-collapse: collapse;
+        }
+        th, td {
+            padding: 10px;
+            border: 1px solid #ddd;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+    </style>
+</head>
+<body>
+    <h1>Event Statistics Plot</h1>
+    <table>
+        <tr>
+            <th>Event Name</th>
+            <th>Occurrence Count</th>
+            <th>Average Processing Time (ms)</th>
+        </tr>
+        {% for event_name, stats in event_statistics.items() %}
+        <tr>
+            <td>{{ event_name }}</td>
+            <td>{{ stats.occurrence_count }}</td>
+            <td>{{ stats.avg_processing_time }}</td>
+        </tr>
+        {% endfor %}
+    </table>
+</body>
+</html>
