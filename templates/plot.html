@@ -40,12 +40,16 @@
             <th>Event Name</th>
             <th>Occurrence Count</th>
             <th>Average Processing Time (ms)</th>
+            <th>Minimum Processing Time (ms)</th>
+            <th>Maximum Processing Time (ms)</th>
         </tr>
         {% for event_name, stats in event_statistics.items() %}
         <tr>
             <td>{{ event_name }}</td>
             <td>{{ stats.occurrence_count }}</td>
             <td>{{ stats.avg_processing_time }}</td>
+            <td>{{ stats.min_processing_time }}</td>
+            <td>{{ stats.max_processing_time }}</td>
         </tr>
         {% endfor %}
     </table>
