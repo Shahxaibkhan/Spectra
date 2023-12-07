@@ -47,15 +47,13 @@
     </style>
 </head>
 <body>
-    <h1>SFS - SE  Logs Analyzer</h1>
-    <form method="post" action="/upload-sfsse" enctype="multipart/form-data">
-        <label for="sfs_file">SFS Log File:</label>
-        <input type="file" name="sfs_file" accept=".log" required>
+    <h1>IM  Logs Analyzer</h1>
+    <form method="post" action="/upload-im" enctype="multipart/form-data">
+       
+        <label for="log_file">IM Log File:</label>
+        <input type="file" name="log_file" accept=".log" required>
         <br>
-        <label for="im_file">SE Log File:</label>
-        <input type="file" name="se_file" accept=".log" required>
-        <br>
-        <input type="submit" value="Analyze & Download">
+        <input type="submit" value="Analyze AMS events">
     </form>
 </body>
 </html>
