@@ -11,7 +11,13 @@
             text-align: center;
             padding: 20px;
         }
-        h1, h2 {
+        h1 {
+            color: maroon; /* Set the color to maroon */
+            font-size: 36px; /* Increase the font size for prominence */
+            font-weight: bold; /* Add bold font weight for prominence */
+            margin-bottom: 10px; /* Add some margin at the bottom */
+        }
+        h2 {
             color: #333;
         }
         ul {
@@ -43,13 +49,15 @@
 </head>
 <body>
     <h1>S.P.E.C.T.R.A.</h1>
-    <h2>(Service Performance, Errors, Connectivity, Time, and Response Analysis)</h2>
+    <h2>(Service Performance, Errors, Connectivity, Time, and Response Analyzer)</h2>
     <br><br>
     <ul>
         <li><a href="/analyze/sfs-im"><button>Analyze SFS - IM Logs</button></a></li>
         <li><a href="/analyze/sfs-se"><button>Analyze SFS - SE Logs</button></a></li>
+        <li><a href="/analyze/im"><button>Analyze IM Logs</button></a></li><br><br>
         <li><a href="/plot-sfs-im"><button>Display SFS-IM stats</button></a></li>
         <li><a href="/plot-sfs-se"><button>Display SFS-SE stats</button></a></li>
+        <li><a href="/plot-im_ams"><button>Display IM stats</button></a></li>
         <!-- Add more services as needed -->
     </ul>
 </body>
