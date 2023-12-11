@@ -131,8 +131,8 @@ def write_sorted_sfs_se_logs(file, sorted_logs, all_logs):
             event_statistics[event_name].append(process_time.total_seconds() * 1000)
 
             # Print details in the desired format
-            file.write(f"\n{prev_log[0]} {prev_log[1]} {prev_log[3]}   {prev_log[4]}")
-            file.write(f"{log[0]} {log[1]} {log[3]}  {log[4]} \n")
+            file.write(f"\n{prev_log[0]} {prev_log[3]} {prev_log[1]} {prev_log[4]}")
+            file.write(f"{log[0]} {log[3]} {log[1]} {log[4]} \n")
             file.write(f"    Process Time: {process_time.total_seconds() * 1000:.3f} milliseconds\n")
             file.write(f"    Flow: {prev_log[1]} to {log[1]}\n")
             file.write(f"    Tenant ID: {log[2]}\n")
@@ -183,8 +183,8 @@ def write_IM_sorted_logs(file, sorted_logs, all_logs):
             event_statistics[event_name].append(process_time.total_seconds() * 1000)
 
             # Print details in the desired format
-            file.write(f"{prev_log['timestamp']} {prev_log['tenant_id']} {prev_log['ixnid']}  DEBUG: [ {'im.flow'}] {prev_log['arrow_direction']} {'ams'}: {prev_log['header']}  (agent_id:{prev_log['agent_id']}) ]~~\n")
-            file.write(f"{log['timestamp']} {log['tenant_id']} {log['ixnid']}  DEBUG: [ {'im.flow'}] {log['arrow_direction']} {'ams'}: {log['header']}  (agent_id:{log['agent_id']}) ]~~\n")
+            file.write(f"{prev_log['timestamp']} {prev_log['ixnid']}  DEBUG: [ {'im.flow'}] {prev_log['arrow_direction']} {'ams'}: {prev_log['header']}  (agent_id:{prev_log['agent_id']}) ]~~\n")
+            file.write(f"{log['timestamp']} {log['ixnid']}  DEBUG: [ {'im.flow'}] {log['arrow_direction']} {'ams'}: {log['header']}  (agent_id:{log['agent_id']}) ]~~\n")
             file.write(f"    Event Name: {log['event_name']}\n")
             file.write(f"    Process Time: {process_time.total_seconds() * 1000:.3f} milliseconds\n")
             file.write(f"    Flow: { 'IM' } to { 'ams' }\n")
