@@ -4,12 +4,15 @@ import os
 import zipfile
 import re
 from datetime import datetime
-import matplotlib.pyplot as plt
-import numpy as np
+from pages.im_page import IMPage
+from pages.se_page import SEPage
 
 
 
 app = Flask(__name__)
+
+im_page = IMPage(app)
+se_page = SEPage(app)
 
 
 
@@ -52,38 +55,6 @@ def read_and_extract(file_path,log_flow = None):
             if info:
                 logs.append(info)
     return logs
-
-
-def parse_im_log(log):
-    match = re.search(r'(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2},\d+) +\d+ +DEBUG: \[ {tenant:(\d+), ixn:(\d+)} \[im\.flow\] (<-|->) ams: (.+?)\]~~', log)
-
-    if match:
-        timestamp = match.group(1)
-        tenant_id = match.group(2)
-        ixn_id = match.group(3)
-        arrow_direction = match.group(4)
-        
-        # Check if there is a match for group(5)
-        ams_data = match.group(5) if len(match.groups()) >= 5 else None
-
-
-        ams_match = re.search(r'(\w+) \(agent_id:(\d+)', ams_data)
-        ams_event_name = ams_match.group(1)
-        ams_agent_id = ams_match.group(2)
-
-        output =  {
-            'timestamp': datetime.strptime(timestamp, "%Y-%m-%d %H:%M:%S,%f"),
-            'tenant_id': int(tenant_id),
-            'ixnid': int(ixn_id),
-            'arrow_direction' : arrow_direction,
-            'event_name': ams_event_name,
-            'agent_id': int(ams_agent_id),
-            'header': ams_data,
-        }
-        return output
-
-
-    return None
 
 def parse_sfs_log(log):
     match = re.search(r'(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2},\d+).*tenant_id: (\d+).*ixn_id: (\d+).*', log)
@@ -161,62 +132,6 @@ def write_sorted_sfs_se_logs(file, sorted_logs, all_logs):
      
     return download_files(file_paths, "sfs-se.zip")
 
-
-
-def write_IM_sorted_logs(file, sorted_logs, all_logs):
-    prev_log = None  # To keep track of the previous log in the loop
-
-    event_statistics = {}
-
-    for log in sorted_logs:
-      
-
-        # Calculate process time for related events
-        if prev_log and prev_log['arrow_direction'] == '->' and log['ixnid'] == prev_log['ixnid'] and log['event_name'] == prev_log['event_name'] and log['agent_id'] == prev_log['agent_id'] and log['arrow_direction'] != prev_log['arrow_direction']:
-            process_time = log['timestamp'] - prev_log['timestamp']
-            
-            # Store event statistics
-            event_name = log['event_name']
-            if event_name not in event_statistics:
-                event_statistics[event_name] = []
-
-            event_statistics[event_name].append(process_time.total_seconds() * 1000)
-
-            # Print details in the desired format
-            file.write(f"{prev_log['timestamp']} {prev_log['ixnid']}  DEBUG: [ {'im.flow'}] {prev_log['arrow_direction']} {'ams'}: {prev_log['header']}  (agent_id:{prev_log['agent_id']}) ]~~\n")
-            file.write(f"{log['timestamp']} {log['ixnid']}  DEBUG: [ {'im.flow'}] {log['arrow_direction']} {'ams'}: {log['header']}  (agent_id:{log['agent_id']}) ]~~\n")
-            file.write(f"    Event Name: {log['event_name']}\n")
-            file.write(f"    Process Time: {process_time.total_seconds() * 1000:.3f} milliseconds\n")
-            file.write(f"    Flow: { 'IM' } to { 'ams' }\n")
-            file.write(f"    Tenant ID: {log['tenant_id']}\n")
-            file.write(f"    IXN ID: {log['ixnid']}\n")
-            file.write(f"    Agent ID: {log['agent_id']}\n\n")
-
-            prev_log = None
-        else:
-            prev_log = log
-
-    file.write("\n=== logs End ===\n")
-    for log in all_logs:
-        file.write(log)
-
-
-    
-    current_dir = os.getcwd()
-
-   # Specify the output file for the event statistics with an absolute path
-    event_stats_file = "ams_events_stats.txt"
-    write_event_statistics(event_stats_file, event_statistics)
-
-    # Get the absolute path of the output file
-    output_file_path = "IM_ams_flow.log"
-
-    # download the files (IM_ams_flow.log and event_stats.txt) as a zip
-    file_paths = [output_file_path, event_stats_file]
-     
-    return download_files(file_paths, "Interaction_manager.zip")
-    # download_name = "event_stats.log"
-    # return download_file("event_stats.txt", download_name)
 
 def write_sorted_logs(file, sorted_logs, all_logs):
     prev_log = None  # To keep track of the previous log in the loop
@@ -349,44 +264,6 @@ def files_upload_and_processing_sfs_se_logs():
 
     return sorted_logs
 
-def file_upload_and_processing_im_logs():
-    log_file = request.files['log_file']
-
-    # Get the current working directory
-    current_dir = os.getcwd()
-
-    # Specify the directory for saving and reading files
-    upload_dir = os.path.join(current_dir, 'logs_uploaded_files')
-    
-    # Ensure the directory exists
-    os.makedirs(upload_dir, exist_ok=True)
-
-    # Save uploaded files with absolute paths
-    log_file_path = os.path.join(upload_dir, 'logfile.log')
-    log_file.save(log_file_path)
-
-    with open(log_file_path, 'r') as log_file:
-        log_file =log_file.readlines()
-
-    parsed_log_file = [parse_im_log(log) for log in log_file if parse_im_log(log) is not None]
-
-    # Check if any logs were parsed
-    if not parsed_log_file:
-        # Handle the case when no logs were parsed
-        return []
-
-    sorted_logs = sorted(parsed_log_file, key=lambda x: (x['ixnid'], x['event_name'], x['agent_id'] if x['agent_id'] is not None else 0, x['tenant_id'], x['timestamp']))
-
-    return sorted_logs
-
-
-    
-
-    
-    
-
-
-
 
 
 
@@ -453,13 +330,17 @@ def analyze_sfsim():
 
 @app.route('/analyze/sfs-se')
 def analyze_sfsse():
-    # Implement your IM analysis logic here
     return render_template('sfsse.html')  
 
 @app.route('/analyze/im')
 def analyze_im():
     # Implement your IM analysis logic here
-    return render_template('im.html') 
+    return im_page.analyze() 
+
+@app.route('/analyze/se')
+def analyze_se():
+    # Implement your IM analysis logic here
+    return se_page.analyze() 
 
 @app.route('/upload-sfsse', methods=['POST'])
 def upload_sfsse():
@@ -472,12 +353,16 @@ def upload_sfsse():
 
 @app.route('/upload-im', methods=['POST'])
 def upload_im():
-    sorted_logs = file_upload_and_processing_im_logs()
-    current_dir = os.getcwd()
-     # Specify the output file for the analysis with an absolute path
-    output_file = os.path.join(current_dir, "IM_ams_flow.log")
-    with open(output_file, 'w') as file:
-        return write_IM_sorted_logs(file, sorted_logs, [])
+     return im_page.upload_im() 
+
+@app.route('/upload-se', methods=['POST'])
+def upload_se():
+    action = request.form['action']
+    if action == 'Analyze Vectors':
+        return se_page.analyze_vectors() 
+    elif action == 'Display Vector Details':
+        return se_page.display_vector_stats()
+     
 
 @app.route('/upload-sfsim', methods=['POST'])
 def upload_sfsim():
@@ -487,6 +372,9 @@ def upload_sfsim():
     output_file = os.path.join(current_dir, "SFS-IM_flow.log")
     with open(output_file, 'w') as file:
         return write_sorted_logs(file, sorted_logs, [])
+
+
+
 
 @app.route('/plot-sfs-im', methods=['GET'])
 def plot_sfs_im_results():
