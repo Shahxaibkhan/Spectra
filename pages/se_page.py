@@ -33,6 +33,14 @@ class SEPage(BasePage):
             file.write(logs_json)
 
         return send_file(output_file, as_attachment=True, download_name="vector_details.json")
+    
+    def display_checks_stats(self):
+        checks_stats = self.generate_checks()
+
+        # Return the generated statistics to be displayed in the HTML template
+        return render_template('checks_stats.html', checks_stats=checks_stats)
+
+
 
     def display_vector_stats(self):
         # Process logs and generate vector statistics
@@ -40,6 +48,28 @@ class SEPage(BasePage):
 
         # Return the generated statistics to be displayed in the HTML template
         return render_template('vector_stats.html', vector_stats=vector_stats)
+
+
+    def generate_checks(self):
+
+        logs = self.file_upload_and_processing_logs()
+        vector_stats = []
+
+        for log in logs:
+            match = re.search(r'Number of Vectors loaded:(\d+)', log)
+            if match:
+                vectors_loaded = int(match.group(1))
+                vector_stats.append({"check_name": "Number of Vectors loaded", "value": vectors_loaded})
+
+            match = re.search(r'Vector compilation took:(\d+) sec', log)
+            if match:
+                compilation_time = int(match.group(1))
+                vector_stats.append({"check_name": "Vector Compilation Time", "value": compilation_time})
+
+            # Add more checks as needed
+
+        return vector_stats
+
 
     def generate_vector_stats(self):
         # Get processed logs
@@ -178,7 +208,7 @@ class SEPage(BasePage):
 
 
     def parse_vector_log(self,log):
-            search_pattern = r'(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2},\d{3}) \[\d+\]  DEBUG: \[ VectorScript::executeVectorSteps: > Time taken for script execution:(\d+)usecs\. CallID:(\d+\|\d+\.\d+\.\d+), VecID:(\d+\|\d+\.\d+\.\d+), isLastStep:(true|false), executionIndex:(\d+) \]~~'
+            search_pattern = r'(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2},\d{3}) \[\d+\]  DEBUG: \[ VectorScript::executeVectorSteps: > Time taken for script execution:(\d+) usecs\. CallID:(\d+\|\d+\.\d+\.\d+), VecID:(\d+\|\d+\.\d+\.\d+), isLastStep:(true|false), executionIndex:(\d+) \]~~'
             log_pattern = re.compile(search_pattern)
             logpattern_match = log_pattern.search(log)
 

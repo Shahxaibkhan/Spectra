@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>S.P.E.C.T.R.A. - Checks Statistics</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f4f4f4;
+      text-align: center;
+      padding: 20px;
+    }
+
+    h1 {
+      color: #800000; /* Maroon color for headings */
+    }
+
+    table {
+      width: 80%;
+      margin: 20px auto;
+      border-collapse: collapse;
+    }
+
+    th, td {
+      padding: 10px;
+      border: 1px solid #ddd;
+      text-align: left;
+    }
+
+    th {
+      background-color: #800000; /* Maroon color for headings */
+      color: #fff; /* White color for text in headings */
+      cursor: pointer; /* Pointing hand on headings */
+      position: relative; /* Added for arrow positioning */
+    }
+
+    th::after {
+      content: "";
+      border-top: 5px solid transparent;
+      border-bottom: 5px solid transparent;
+      border-left: 5px solid #fff; /* White color for ascending arrow */
+      display: block;
+      width: 0;
+      height: 0;
+      position: absolute;
+      right: 10px; /* Adjust position as needed */
+      top: 50%;
+      transform: translateY(-50%) rotate(-90deg);
+    }
+
+    th.desc::after {
+      border-left: 0; /* Hide ascending arrow */
+      border-right: 5px solid #fff; /* Show descending arrow */
+    }
+  </style>
+</head>
+<body>
+  <h1>Checks Statistics</h1>
+  <script>
+    function sortTable(column) {
+      // Get the table body
+      var tbody = document.querySelector('tbody');
+
+      // Convert the node list to an array
+      var rows = Array.from(tbody.querySelectorAll('tr'));
+
+      // Sort the table rows by the specified column
+      rows.sort(function (row1, row2) {
+        // Get the values to compare
+        var value1 = parseFloat(row1.querySelector('td:nth-child(' + column + ')').textContent);
+        var value2 = parseFloat(row2.querySelector('td:nth-child(' + column + ')').textContent);
+
+        // Ensure numeric values are compared correctly
+        if (!isNaN(value1) && !isNaN(value2)) {
+          return value1 - value2;
+        } else {
+          return value1.localeCompare(value2);
+        }
+      });
+
+      // Reverse the order if the header has a 'desc' class
+      if (document.querySelector('th:nth-child(' + column + ')').classList.contains('desc')) {
+        rows.reverse();
+        document.querySelector('th:nth-child(' + column + ')').classList.remove('desc');
+      } else {
+        document.querySelectorAll('th').forEach(function (th) {
+          th.classList.remove('desc');
+        });
+        document.querySelector('th:nth-child(' + column + ')').classList.add('desc');
+      }
+
+      // Append the sorted rows to the table body
+      tbody.innerHTML = '';
+      for (var i = 0; i < rows.length; i++) {
+        tbody.appendChild(rows[i]);
+      }
+    }
+  </script>
+ <table>
+    <thead>
+      <tr>
+        <th>Check Name</th>
+        <th onclick="sortTable(2)">Value</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for check_result in checks_stats %}
+        <tr>
+          <td>{{ check_result["check_name"] }}</td>
+          <td>{{ check_result["value"] }}</td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</body>
+</html>
