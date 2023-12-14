@@ -362,6 +362,8 @@ def upload_se():
         return se_page.analyze_vectors() 
     elif action == 'Display Vector Details':
         return se_page.display_vector_stats()
+    elif action == 'Run Checks':
+        return se_page.display_checks_stats()
      
 
 @app.route('/upload-sfsim', methods=['POST'])

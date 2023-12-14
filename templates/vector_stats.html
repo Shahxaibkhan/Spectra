@@ -1,70 +1,97 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>S.P.E.C.T.R.A. - Vector Statistics</title>
+  <!-- Include jQuery -->
+  <script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
+  <!-- Include DataTables CSS and JS -->
+  <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.10.23/css/jquery.dataTables.min.css">
+  <script src="https://cdn.datatables.net/1.10.23/js/jquery.dataTables.min.js"></script>
+
   <style>
     body {
       font-family: 'Arial', sans-serif;
-      background-color: #f4f4f4; /* Light gray background color */
+      background-color: #f4f4f4;
+      /* Light gray background color */
       text-align: center;
       padding: 20px;
-      color: #333; /* Dark text color */
+      color: #333;
+      /* Dark text color */
     }
 
     h1 {
-      color: #800000; /* Maroon color for the title */
+      color: #800000;
+      /* Maroon color for the title */
     }
 
     table {
       width: 80%;
       margin: 20px auto;
       border-collapse: collapse;
-      background-color: #fff; /* White background for the table */
-      color: #333; /* Dark text color */
-      box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1); /* Add a subtle shadow */
+      background-color: #fff;
+      /* White background for the table */
+      color: #333;
+      /* Dark text color */
+      box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+      /* Add a subtle shadow */
     }
 
-    th, td {
+    th,
+    td {
       padding: 15px;
-      border: 1px solid #ddd; /* Light border color */
+      border: 1px solid #ddd;
+      /* Light border color */
       text-align: left;
     }
 
     th {
-      background-color: #800000; /* Maroon color for headings */
-      color: #fff; /* White color for text in headings */
-      
+      background-color: #800000;
+      /* Maroon color for headings */
+      color: #fff;
+      /* White color for text in headings */
     }
-
-   
   </style>
 </head>
+
 <body>
   <h1>Interaction Flow Statistics</h1>
 
-  <table border="1">
-    <tr>
-      <th>Interaction Flow ID</th>
-      <th>Call ID</th>
-      <th>Number of Steps</th>
-      <th>Total Execution Time (μs)</th> 
-      <th>Tenant ID</th>
-      <th>Contains First Step</th>
-      <th>Contains Last Step</th>
-    </tr>
-    {% for vector_stat in vector_stats %}
+  <table id="interactionTable" class="display">
+    <thead>
+      <tr>
+        <th data-sort="int">Interaction Flow ID</th>
+        <th data-sort="int">Call ID</th>
+        <th data-sort="int">Number of Breaks</th>
+        <th data-sort="int">Total Execution Time (μs)</th>
+        <th data-sort="int">Tenant ID</th>
+        <th data-sort="string">Contains First Step</th>
+        <th data-sort="string">Contains Last Step</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for vector_stat in vector_stats %}
       <tr>
         <td>{{ vector_stat.vector_id }}</td>
         <td>{{ vector_stat.call_id }}</td>
         <td>{{ vector_stat.number_of_steps }}</td>
-        <td>{{ vector_stat.total_execution_time }}</td> 
+        <td>{{ vector_stat.total_execution_time }}</td>
         <td>{{ vector_stat.tenant_id }}</td>
         <td>{{ "True" if vector_stat.contains_first_step else "False" }}</td>
         <td>{{ "True" if vector_stat.contains_last_step else "False" }}</td>
       </tr>
-    {% endfor %}
+      {% endfor %}
+    </tbody>
   </table>
+
+  <!-- Initialize DataTables -->
+  <script>
+    $(document).ready(function () {
+      $('#interactionTable').DataTable();
+    });
+  </script>
 </body>
+
 </html>
