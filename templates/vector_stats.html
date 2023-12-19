@@ -10,53 +10,117 @@
   <!-- Include DataTables CSS and JS -->
   <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.10.23/css/jquery.dataTables.min.css">
   <script src="https://cdn.datatables.net/1.10.23/js/jquery.dataTables.min.js"></script>
+  <!-- Include Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
   <style>
     body {
       font-family: 'Arial', sans-serif;
       background-color: #f4f4f4;
-      /* Light gray background color */
       text-align: center;
       padding: 20px;
       color: #333;
-      /* Dark text color */
     }
 
     h1 {
       color: #800000;
-      /* Maroon color for the title */
+      margin-bottom: 20px;
     }
 
-    table {
+    .summary-table,
+    .interaction-table {
       width: 80%;
       margin: 20px auto;
       border-collapse: collapse;
       background-color: #fff;
-      /* White background for the table */
       color: #333;
-      /* Dark text color */
       box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
-      /* Add a subtle shadow */
     }
 
-    th,
-    td {
+    .summary-table th,
+    .summary-table td,
+    .interaction-table th,
+    .interaction-table td {
       padding: 15px;
       border: 1px solid #ddd;
-      /* Light border color */
       text-align: left;
     }
 
-    th {
+    .summary-table th,
+    .interaction-table th {
       background-color: #800000;
-      /* Maroon color for headings */
       color: #fff;
-      /* White color for text in headings */
+    }
+
+    .interaction-table th {
+      background-color: #007bff;
+      color: #fff;
+    }
+
+    .table-separator {
+      border-top: 2px solid #800000;
+      margin-top: 20px;
+    }
+
+    canvas {
+      margin-top: 20px;
+      width: 300px;
+      height: 300px;
     }
   </style>
 </head>
 
 <body>
+  <h1>Summary Report</h1>
+
+  <table id="summaryTable" class="display">
+    <thead>
+      <tr>
+        <th>Statistic</th>
+        <th>Value</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Total Calls</td>
+        <td>{{ summary_report.total_calls }}</td>
+      </tr>
+      <tr>
+        <td>Total Vectors Executed</td>
+        <td>{{ summary_report.total_vectors }}</td>
+      </tr>
+      <tr>
+        <td>Max Processing Vector ID</td>
+        <td>{{ summary_report.max_processing_vector.vector_id }}</td>
+      </tr>
+      <tr>
+        <td>Max Processing Time (μs)</td>
+        <td>{{ summary_report.max_processing_vector.total_execution_time }}</td>
+      </tr>
+      <tr>
+        <td>Min Processing Vector ID</td>
+        <td>{{ summary_report.min_processing_vector.vector_id }}</td>
+      </tr>
+      <tr>
+        <td>Min Processing Time (μs)</td>
+        <td>{{ summary_report.min_processing_vector.total_execution_time }}</td>
+      </tr>
+      <tr>
+        <td>Vectors Loaded</td>
+        <td>{{ summary_report.vectors_loaded }}</td>
+      </tr>
+      <tr>
+        <td>Vectors Loading Compilation Time (s)</td>
+        <td>{{ summary_report.compilation_time }}</td>
+      </tr>
+    </tbody>
+  </table>
+
+
+  
+  
+  <div class="table-separator"></div>
+
   <h1>Interaction Flow Statistics</h1>
 
   <table id="interactionTable" class="display">
@@ -72,7 +136,7 @@
       </tr>
     </thead>
     <tbody>
-      {% for vector_stat in vector_stats %}
+      {% for vector_stat in summary_report.vector_stats_details %}
       <tr>
         <td>{{ vector_stat.vector_id }}</td>
         <td>{{ vector_stat.call_id }}</td>
@@ -86,12 +150,55 @@
     </tbody>
   </table>
 
-  <!-- Initialize DataTables -->
+  <div class="table-separator"></div>
+  <h1>Interaction Flow Distribution</h1>
+  <canvas id="vectorIdPieChart" ></canvas>
+
+  <!-- Initialize DataTables and Pie Chart -->
   <script>
     $(document).ready(function () {
+      // Initialize DataTables
       $('#interactionTable').DataTable();
+      $('#summaryTable').DataTable();
+
+      // Extract vector_id_counts from summary_report
+      var vectorIdCounts = {{ summary_report.vector_id_counts|tojson }};
+
+      // Extract labels and data for the pie chart
+      var labels = Object.keys(vectorIdCounts);
+      var data = Object.values(vectorIdCounts);
+
+      // Set up the pie chart
+      var ctx = document.getElementById('vectorIdPieChart').getContext('2d');
+      var vectorIdPieChart = new Chart(ctx, {
+        type: 'pie',
+        data: {
+          labels: labels,
+          datasets: [{
+            data: data,
+            backgroundColor: [
+              'rgba(255, 99, 132, 0.7)',
+              'rgba(54, 162, 235, 0.7)',
+              'rgba(255, 206, 86, 0.7)',
+              'rgba(75, 192, 192, 0.7)',
+              'rgba(153, 102, 255, 0.7)',
+              'rgba(255, 159, 64, 0.7)'
+              // Add more colors as needed
+            ]
+          }]
+        },
+        options: {
+          legend: {
+            display: true,
+            position: 'center', // Center align the legend
+            align: 'center',
+          }
+        }
+      });
     });
   </script>
 </body>
 
 </html>
+
+     

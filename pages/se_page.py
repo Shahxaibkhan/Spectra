@@ -42,38 +42,103 @@ class SEPage(BasePage):
 
 
 
-    def display_vector_stats(self):
-        # Process logs and generate vector statistics
-        vector_stats = self.generate_vector_stats()
+    def generate_se_stats(self):
+        # Generate summary report
+        summary_report = self.generate_summary_report()
 
-        # Return the generated statistics to be displayed in the HTML template
-        return render_template('vector_stats.html', vector_stats=vector_stats)
+        # Return the generated summary report to be displayed in the HTML template
+        return render_template('vector_stats.html', summary_report=summary_report)
+
+    def generate_summary_report(self):
+        log_file = self.file_upload_and_processing_logs()
+        vector_stats = self.generate_vector_stats(log_file)
+        check_results = self.generate_checks(log_file)
+
+        print('check_results: ', check_results)
+
+        # Process results for summary report
+        total_calls = len(vector_stats)
+
+        # Extract unique vector_ids from vector_stats and count occurrences
+        vector_id_counts = {}
+        for entry in vector_stats:
+            vector_id = entry.get('vector_id')
+            if vector_id:
+                vector_id_counts[vector_id] = vector_id_counts.get(vector_id, 0) + 1
+
+        total_vectors = len(vector_id_counts)
+
+        # Initialize max_processing_vector and min_processing_vector
+        max_processing_vector = None
+        min_processing_vector = None
+
+        # Check if vector_stats is not empty before finding max and min
+        if vector_stats:
+            # Find the vector with maximum processing time
+            max_processing_vector = max(vector_stats, key=lambda x: x.get('total_execution_time', 0))
+
+            # Find the vector with minimum processing time
+            min_processing_vector = min(vector_stats, key=lambda x: x.get('total_execution_time', 0))
+
+        # Extract vectors loaded and compilation time from check_results
+        vectors_loaded = 0
+        compilation_time = 0
+
+        for check_result in check_results:
+            if check_result["check_name"] == "Vector Loaded and Compilation Time":
+                vectors_loaded = check_result["vectors_loaded"]
+                compilation_time = check_result["compilation_time"]
+                break
+
+        summary_report = {
+            "total_calls": total_calls,
+            "total_vectors": total_vectors,
+            "max_processing_vector": {
+                "vector_id": max_processing_vector.get('vector_id', 'N/A'),
+                "total_execution_time": max_processing_vector.get('total_execution_time', 'N/A')
+            },
+            "min_processing_vector": {
+                "vector_id": min_processing_vector.get('vector_id', 'N/A'),
+                "total_execution_time": min_processing_vector.get('total_execution_time', 'N/A')
+            },
+            "vectors_loaded": vectors_loaded,
+            "compilation_time": compilation_time,
+            "vector_stats_details": vector_stats,
+            "vector_id_counts": vector_id_counts
+        }
+
+        print('Summary Report:', summary_report)
+        return summary_report
 
 
-    def generate_checks(self):
-
-        logs = self.file_upload_and_processing_logs()
+    def generate_checks(self,logs):
+        
         vector_stats = []
 
         for log in logs:
-            match = re.search(r'Number of Vectors loaded:(\d+)', log)
-            if match:
-                vectors_loaded = int(match.group(1))
-                vector_stats.append({"check_name": "Number of Vectors loaded", "value": vectors_loaded})
-
-            match = re.search(r'Vector compilation took:(\d+) sec', log)
+            # Use a single regular expression to capture both values in one go
+            match = re.search(r'Vector compilation took:(\d+)\s*sec.*Number of Vectors loaded:(\d+)', log)
+            
             if match:
                 compilation_time = int(match.group(1))
-                vector_stats.append({"check_name": "Vector Compilation Time", "value": compilation_time})
+                vectors_loaded = int(match.group(2))
+                vector_stats.append({
+                    "check_name": "Vector Loaded and Compilation Time",
+                    "compilation_time": compilation_time,
+                    "vectors_loaded": vectors_loaded,
+                })
 
-            # Add more checks as needed
+                
 
+                # Break the loop after the first match is found
+                break
+        print('vector_stats:',vector_stats)
         return vector_stats
 
 
-    def generate_vector_stats(self):
+    def generate_vector_stats(self,log_file):
         # Get processed logs
-        sorted_logs = self.vectors_processed_logs()
+        sorted_logs = self.vectors_processed_logs(log_file)
 
         vector_stats = []
 
@@ -156,8 +221,8 @@ class SEPage(BasePage):
         return logs_json
 
 
-    def vectors_processed_logs(self):
-            log_file = self.file_upload_and_processing_logs()
+    def vectors_processed_logs(self,log_file):
+            
 
             parsed_vector_logs = [result for log in log_file if (result := self.parse_vector_log(log)) is not None]
 
