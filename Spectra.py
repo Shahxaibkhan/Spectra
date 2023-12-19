@@ -355,15 +355,15 @@ def upload_sfsse():
 def upload_im():
      return im_page.upload_im() 
 
-@app.route('/upload-se', methods=['POST'])
+@app.route('/display_se_report', methods=['POST'])
 def upload_se():
     action = request.form['action']
     if action == 'Analyze Vectors':
         return se_page.analyze_vectors() 
-    elif action == 'Display Vector Details':
-        return se_page.display_vector_stats()
-    elif action == 'Run Checks':
-        return se_page.display_checks_stats()
+    elif action == 'Display Report':
+        return se_page.generate_se_stats()
+    # elif action == 'Run Checks':
+    #     return se_page.display_checks_stats()
      
 
 @app.route('/upload-sfsim', methods=['POST'])
