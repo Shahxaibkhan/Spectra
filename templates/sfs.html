@@ -45,14 +45,14 @@
         }
     </style>
 </head>
-<body>
-    <h1>SE Logs Analyzer</h1>
-    <form method="post" action="/display_se_report" enctype="multipart/form-data">
+<body>  
+    <h1>SFS Logs Analyzer</h1>
+    <form method="post" action="/display_sfs_report" enctype="multipart/form-data">
        
-        <label for="log_file">SE Log File:</label>
-        <input type="file" name="se_file" accept=".log" required>
+        <label for="log_file">SFS Log File:</label>
+        <input type="file" name="sfs_file" accept=".log" required>
         <br>
-        <input type="submit" name="action" value="Analyze Vector Details">
+        <input type="submit" name="action" value="Analyze Worker threads">
         <input type="submit" name="action" value="Display Report">
     </form>
 </body>

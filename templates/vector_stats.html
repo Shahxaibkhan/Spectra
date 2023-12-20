@@ -152,51 +152,59 @@
 
   <div class="table-separator"></div>
   <h1>Interaction Flow Distribution</h1>
-  <canvas id="vectorIdPieChart" ></canvas>
+  <canvas id="vectorIdLineChart"></canvas>
 
-  <!-- Initialize DataTables and Pie Chart -->
+  <!-- Initialize DataTables and Line Chart -->
   <script>
-    $(document).ready(function () {
-      // Initialize DataTables
-      $('#interactionTable').DataTable();
-      $('#summaryTable').DataTable();
+      $(document).ready(function () {
+          // Initialize DataTables
+          $('#interactionTable').DataTable();
+          $('#summaryTable').DataTable();
 
-      // Extract vector_id_counts from summary_report
-      var vectorIdCounts = {{ summary_report.vector_id_counts|tojson }};
+          // Extract vector_id_counts from summary_report
+          var vectorIdCounts = {{ summary_report.vector_id_counts|tojson }};
 
-      // Extract labels and data for the pie chart
-      var labels = Object.keys(vectorIdCounts);
-      var data = Object.values(vectorIdCounts);
+          // Extract labels and data for the line chart
+          var labels = Object.keys(vectorIdCounts);
+          var data = Object.values(vectorIdCounts);
 
-      // Set up the pie chart
-      var ctx = document.getElementById('vectorIdPieChart').getContext('2d');
-      var vectorIdPieChart = new Chart(ctx, {
-        type: 'pie',
-        data: {
-          labels: labels,
-          datasets: [{
-            data: data,
-            backgroundColor: [
-              'rgba(255, 99, 132, 0.7)',
-              'rgba(54, 162, 235, 0.7)',
-              'rgba(255, 206, 86, 0.7)',
-              'rgba(75, 192, 192, 0.7)',
-              'rgba(153, 102, 255, 0.7)',
-              'rgba(255, 159, 64, 0.7)'
-              // Add more colors as needed
-            ]
-          }]
-        },
-        options: {
-          legend: {
-            display: true,
-            position: 'center', // Center align the legend
-            align: 'center',
-          }
-        }
+          // Set up the line chart
+          var ctx = document.getElementById('vectorIdLineChart').getContext('2d');
+          var vectorIdLineChart = new Chart(ctx, {
+              type: 'line',
+              data: {
+                  labels: labels,
+                  datasets: [{
+                      label: 'Vector ID Counts',
+                      data: data,
+                      borderColor: 'maroon', // Line color
+                      borderWidth: 2, // Line width
+                      fill: false, // Do not fill area under the line
+                  }]
+              },
+              options: {
+                  legend: {
+                      labels: {
+                          font: {
+                              size: 12, // Legend font size
+                          }
+                      }
+                  },
+                  scales: {
+                      x: {
+                          type: 'category', // Use category scale for x-axis
+                          position: 'bottom',
+                      },
+                      y: {
+                          type: 'linear', // Use linear scale for y-axis
+                          position: 'left',
+                      },
+                  }
+              }
+          });
       });
-    });
-  </script>
+</script>
+
 </body>
 
 </html>

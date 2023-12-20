@@ -6,6 +6,7 @@ import re
 from datetime import datetime
 from pages.im_page import IMPage
 from pages.se_page import SEPage
+from pages.sfs_page import SFSPage
 
 
 
@@ -13,6 +14,7 @@ app = Flask(__name__)
 
 im_page = IMPage(app)
 se_page = SEPage(app)
+sfs_page = SFSPage(app)
 
 
 
@@ -339,8 +341,49 @@ def analyze_im():
 
 @app.route('/analyze/se')
 def analyze_se():
-    # Implement your IM analysis logic here
     return se_page.analyze() 
+
+@app.route('/analyze/sfs')
+def analyze_sfs():
+    return sfs_page.analyze() 
+
+@app.route('/logs')
+def analyze_logs():
+    # Implement your IM analysis logic here
+   return render_template('logs_extractor.html')
+
+@app.route('/add_file', methods=['POST'])
+def add_file():
+    global log_files
+    file = request.files['file']
+    log_files.append(file)
+    return '', 204
+
+@app.route('/extract_logs', methods=['POST'])
+def extract_logs():
+    global log_files
+
+    selected_log_type = request.form['logType']
+    logs = []
+
+    for file in log_files:
+        content = file.stream.read().decode('utf-8')
+        lines = content.split('\n')
+
+        for line in lines:
+            if selected_log_type in line:
+                logs.append(line)
+
+    logs.sort(key=lambda x: x.split(' ')[0])
+
+    merged_logs = '\n'.join(logs)
+
+    output = StringIO()
+    output.write(merged_logs)
+    output.seek(0)
+
+    return send_file(output, as_attachment=True, download_name='merged_logs.txt')
+
 
 @app.route('/upload-sfsse', methods=['POST'])
 def upload_sfsse():
@@ -362,6 +405,17 @@ def upload_se():
         return se_page.analyze_vectors() 
     elif action == 'Display Report':
         return se_page.generate_se_stats()
+    # elif action == 'Run Checks':
+    #     return se_page.display_checks_stats()
+    
+@app.route('/display_sfs_report', methods=['POST'])
+def upload_sfs():
+    action = request.form['action']
+    print(action)
+    if action == 'Analyze Worker threads':
+        return sfs_page.analyze_wrkr_threads() 
+    elif action == 'Display Report':
+        return sfs_page.generate_sfs_stats()
     # elif action == 'Run Checks':
     #     return se_page.display_checks_stats()
      

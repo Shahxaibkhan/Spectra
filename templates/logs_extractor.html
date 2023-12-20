@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>S.P.E.C.T.R.A. - Log Analyzer</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            text-align: center;
+            padding: 20px;
+        }
+        h1 {
+            color: #333;
+        }
+        form {
+            margin: 0 auto;
+            max-width: 400px;
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #555;
+        }
+        input {
+            width: calc(100% - 22px);
+            padding: 10px;
+            margin-bottom: 15px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box;
+            display: inline-block;
+        }
+        .file-input-group {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .remove-file {
+            cursor: pointer;
+            color: #ff0000;
+            text-decoration: none;
+            margin-left: 5px;
+            font-size: 14px;
+            display: none; /* Initially hide the remove link */
+        }
+        .add-file-button {
+            background-color: #800000;
+            color: white;
+            border: none;
+            padding: 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-bottom: 15px;
+        }
+        .log-levels {
+            display: flex;
+            align-items: center;
+            justify-content: space-around;
+            margin-bottom: 15px;
+        }
+        .log-levels label {
+            margin-right: 10px;
+            font-size: 14px;
+        }
+        input[type="radio"] {
+            margin-right: 5px;
+            transform: scale(1.2);
+        }
+        input[type="submit"] {
+            background-color: #800000;
+            color: #fff;
+            cursor: pointer;
+        }
+        input[type="submit"]:hover {
+            background-color: rgb(67, 9, 9);
+        }
+    </style>
+</head>
+<body>
+    <h1>Logs Extractor</h1>
+    <form method="post" action="/upload-log" enctype="multipart/form-data">
+        <div class="file-input-group" id="fileInputGroup">
+            <label for="log_file">Upload Log Files:</label>
+            <input type="file" name="log_file[]" accept=".log" required>
+        </div>
+        
+        <div class="log-levels">
+            <input type="radio" name="log_level" value="TRACE" checked> TRACE
+            <input type="radio" name="log_level" value="DEBUG"> DEBUG
+            <input type="radio" name="log_level" value="ERROR"> ERROR
+            <input type="radio" name="log_level" value="ALL"> ALL
+        </div>
+        <br>
+        <button type="button" class="add-file-button" onclick="addFileInput()">Add File</button>
+        <input type="submit" name="action" value="Merge and Extract">
+    </form>
+
+    <script>
+        function addFileInput() {
+            const fileInputGroup = document.getElementById('fileInputGroup');
+            const newInput = document.createElement('input');
+            newInput.type = 'file';
+            newInput.name = 'log_file[]';
+            newInput.accept = '.log';
+            newInput.required = true;
+            fileInputGroup.appendChild(newInput);
+            
+            // Hide all existing remove links
+            const removeLinks = document.querySelectorAll('.remove-file');
+            removeLinks.forEach(link => {
+                link.style.display = 'none';
+            });
+            
+            const removeLink = document.createElement('a');
+            removeLink.className = 'remove-file';
+            removeLink.innerHTML = 'Remove';
+            removeLink.onclick = function() {
+                fileInputGroup.removeChild(newInput);
+                fileInputGroup.removeChild(removeLink);
+            };
+            
+            fileInputGroup.appendChild(removeLink);
+        }
+    </script>
+</body>
+</html>
