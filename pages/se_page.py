@@ -21,7 +21,8 @@ class SEPage(BasePage):
 
 
     def analyze_vectors(self):
-        sorted_logs = self.vectors_processed_logs()
+        log_file = self.file_upload_and_processing_logs()
+        sorted_logs = self.vectors_processed_logs(log_file)
         current_dir = os.getcwd()
         output_file = os.path.join(current_dir, "vector_details.log")
 
