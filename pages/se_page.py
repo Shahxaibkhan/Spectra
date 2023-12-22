@@ -54,6 +54,7 @@ class SEPage(BasePage):
         log_file = self.file_upload_and_processing_logs()
         vector_stats = self.generate_vector_stats(log_file)
         check_results = self.generate_checks(log_file)
+        check_dn_details = self.dn_details(log_file)
 
       
 
@@ -92,7 +93,7 @@ class SEPage(BasePage):
                 break
 
         summary_report = {
-            "total_calls": total_calls,
+            "total_ixns": total_calls,
             "total_vectors": total_vectors,
             "max_processing_vector": {
                 "vector_id": max_processing_vector.get('vector_id', 'N/A'),
@@ -109,6 +110,34 @@ class SEPage(BasePage):
         }
         return summary_report
 
+
+
+    def dn_details(self,logs):
+        details_list = []
+
+        for log in logs:
+            # Use a regular expression to capture the required details
+            match = re.search(r'\[ Received routing-entity-(\w+) event with id: \w+ tenant: (\w+) entity: (\w+) key: (\d+) event time: (\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d+Z) \]~~', log)
+
+            if match:
+                request_type = match.group(1)  # add or change
+                tenant_name = match.group(2)
+                entity = match.group(3)
+                key = int(match.group(4))
+                event_time = match.group(5)
+
+                # Add details to the list
+                details_list.append({
+                    "request_type": request_type,
+                    "tenant_name": tenant_name,
+                    "entity": entity,
+                    "key": key,
+                    "event_time": event_time,
+                })
+                print(details_list)
+                print('#'*50)
+
+        return details_list
 
     def generate_checks(self,logs):
         
