@@ -55,7 +55,7 @@ class SEPage(BasePage):
         vector_stats = self.generate_vector_stats(log_file)
         check_results = self.generate_checks(log_file)
 
-        print('check_results: ', check_results)
+      
 
         # Process results for summary report
         total_calls = len(vector_stats)
@@ -107,8 +107,6 @@ class SEPage(BasePage):
             "vector_stats_details": vector_stats,
             "vector_id_counts": vector_id_counts
         }
-
-        print('Summary Report:', summary_report)
         return summary_report
 
 
@@ -131,9 +129,7 @@ class SEPage(BasePage):
 
                 
 
-                # Break the loop after the first match is found
-                break
-        print('vector_stats:',vector_stats)
+              
         return vector_stats
 
 
@@ -300,7 +296,6 @@ class SEPage(BasePage):
                 result["first_step"] = result["execution_index"] == 0
 
 
-                print("match result:",result)
                 return result
 
             # If no match is found, return None'

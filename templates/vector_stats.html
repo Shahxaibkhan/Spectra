@@ -14,13 +14,24 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
   <style>
-    body {
-      font-family: 'Arial', sans-serif;
-      background-color: #f4f4f4;
-      text-align: center;
-      padding: 20px;
-      color: #333;
-    }
+     body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f4f4f4;
+            text-align: center;
+            padding: 20px;
+            margin: 0; /* Add margin to reset the default margin */
+        }
+         /* New style for the footer */
+      footer {
+            background-color: maroon;
+            color: white;
+            padding: 10px;
+            position: fixed;
+            bottom: 0;
+            left: 0; /* Align the left edge with the left edge of the viewport */
+            width: 100%; /* Make the footer full width */
+            box-sizing: border-box; /* Include padding and border in the total width */
+        }
 
     h1 {
       color: #800000;
@@ -204,7 +215,6 @@
           });
       });
 </script>
-
 </body>
 
 </html>
