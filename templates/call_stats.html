@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>S.P.E.C.T.R.A. - Call Statistics</title>
+  <!-- Include jQuery -->
+  <script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
+  <!-- Include DataTables CSS and JS -->
+  <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.10.23/css/jquery.dataTables.min.css">
+  <script src="https://cdn.datatables.net/1.10.23/js/jquery.dataTables.min.js"></script>
+  <!-- Include Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <style>
+    body {
+          font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+          background-color: #f4f4f4;
+          text-align: center;
+          padding: 20px;
+          margin: 0; /* Add margin to reset the default margin */
+      }
+        /* New style for the footer */
+        footer {
+          background-color: maroon;
+          color: white;
+          padding: 10px;
+          position: fixed;
+          bottom: 0;
+          left: 0; /* Align the left edge with the left edge of the viewport */
+          width: 100%; /* Make the footer full width */
+          box-sizing: border-box; /* Include padding and border in the total width */
+      }
+
+    h1 {
+      color: #800000;
+      margin-bottom: 20px;
+    }
+
+    .summary-table,
+    .detailed-table {
+      width: 80%;
+      margin: 20px auto;
+      border-collapse: collapse;
+      background-color: #fff;
+      color: #333;
+      box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+    }
+
+    .summary-table th,
+    .summary-table td,
+    .detailed-table th,
+    .detailed-table td {
+      padding: 15px;
+      border: 1px solid #ddd;
+      text-align: left;
+    }
+
+    .summary-table th,
+    .detailed-table th {
+      background-color: #800000;
+      color: #fff;
+    }
+
+    .table-separator {
+      border-top: 2px solid #800000;
+      margin-top: 20px;
+    }
+  </style>
+</head>
+
+<body>
+  <h1>Summary Report</h1>
+
+  <table id="summaryTable" class="display">
+    <thead>
+      <tr>
+        <th>Statistic</th>
+        <th>Value</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Total IXNs</td>
+        <td>{{ summary_data.total_ixns }}</td>
+      </tr>
+      <tr>
+        <td>Transfer Scenarios</td>
+        <td>{{ summary_data.transfer_scenarios }}</td>
+      </tr>
+      <tr>
+        <td>Conference Cases</td>
+        <td>{{ summary_data.conference_cases }}</td>
+      </tr>
+      <tr>
+        <td>SO Cases</td>
+        <td>{{ summary_data.so_cases }}</td>
+      </tr>
+      <tr>
+        <td>IXNs with Duplicated Events</td>
+        <td>{{ summary_data.duplicated_events_ixns }}</td>
+      </tr>
+      <tr>
+        <td>IXNs with NotifyDropout Events</td>
+        <td>{{ summary_data.notify_dropout_ixns }}</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="table-separator"></div>
+
+  <h1>Detailed Report</h1>
+
+  <table id="detailedTable" class="display">
+    <thead>
+      <tr>
+        <th>IXN ID</th>
+        <th>Tenant ID</th>
+        <th>No. of Agents</th>
+        <th>No. of Duplicate Events</th>
+        <th>NotifyDropout</th>
+        <th>Supervisor ID (SO)</th>
+        <th>Transfer Details</th>
+        <th>Conference details</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for detailed_item in detailed_summary %}
+      <tr>
+        <td>{{ detailed_item.ixn_id }}</td>
+        <td>{{ detailed_item.tenant_id }}</td>
+        <td>{{ detailed_item.no_of_agents }}</td>
+        <td>{{ detailed_item.duplicate_events }}</td>
+        <td>{{ detailed_item.notify_dropout }}</td>
+        <td>{{ detailed_item.so_supervisors }}</td>
+        <td>{{ detailed_item.transfer_details }}</td>
+        <td>{{ detailed_item.conference_details }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <!-- Include DataTables for both tables -->
+  <script>
+    $(document).ready(function () {
+      // Initialize DataTable for the summary table
+      $('#summaryTable').DataTable();
+      // Initialize DataTable for the detailed table
+      $('#detailedTable').DataTable();
+    });
+  </script>
+</body>
+
+</html>

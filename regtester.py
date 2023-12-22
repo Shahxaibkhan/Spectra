@@ -1,60 +1,30 @@
 import re
+import json
 
-def extract_tenant_ixn_from_log(log):
-    pattern = r'tenant_id:(\d+).*?ixn_id:(\d+).*?session_id:(\d+)'
-    match = re.search(pattern, log)
+log_file_path = r"C:\Users\shahzaib.khan1\Downloads\SFS_2023_11_14-12_46_37_959_startup.log"
 
-    if match:
-        result = {
-            "tenant_id": int(match.group(1)),
-            "ixn_id": int(match.group(2)),
-            "session_id": int(match.group(3))
-        }
-        return result
-    return None
+pattern = re.compile(r'(?P<timestamp>\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2},\d{6})\s+(?P<log_level>\d+)\s+DEBUG:\s+\[\s+{tenant:(?P<tenant_id>\d+),\s+ixn:(?P<ixn_id>\d+)(?:,\s+agent:(?P<agent_id>\d+))?.*?\]\s+(?P<arrow><-|->)\s+im:\s+(?P<event>\w+)\s+\(header:(?P<header>[^~]+)\)\s.*?~~')
 
-def parse_trace_log(log, session_id_details):
-    pattern = r'(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2},\d{6})\s+(\d+)\s+TRACE: \[ {session_id:(\d+)} \[SFS\.ctxwkr\] (.+?) \]~~'
-    match = re.search(pattern, log)
+with open(log_file_path, 'r') as file:
+    log_lines = file.read()
 
-    if match:
-        result = {
-            "timestamp": match.group(1),
-            "thread_id": int(match.group(2)),
-            "session_id": int(match.group(3)),
-            "log_type": "TRACE",
-            "event_details": match.group(4)
-        }
+matches = re.finditer(pattern, log_lines)
 
-        if result["session_id"] in session_id_details:
-            result.update(session_id_details[result["session_id"]])
+for match in matches:
+    timestamp = match.group('timestamp')
+    tenant_id = match.group('tenant_id')
+    ixn_id = match.group('ixn_id')
+    agent_id = match.group('agent_id')
+    log_level = match.group('log_level')
+    arrow = match.group('arrow')
+    event = match.group('event')
+    header_str = match.group('header')
 
-        return result
+    print(f"Timestamp: {timestamp}, Tenant ID: {tenant_id}, Ixn ID: {ixn_id}, Agent ID: {agent_id}, Log Level: {log_level}, Arrow: {arrow}, Event: {event}")
+    
+    # Extract key-value pairs from the header string by splitting only the first colon
+    header_pairs = [pair.strip().split(':', 1) for pair in header_str.split(',') if pair.strip()]
+    header_obj = dict((key.strip(), value.strip()) for key, value in header_pairs)
 
-    return None
-
-# Specify the path to your log file and output file
-input_file_path = 'D:\\pythonUtility\\sfsreq\\SFS_2023_12_18-12_35_06_642.log'
-output_file_path = 'D:\\pythonUtility\\sfsreq\\output.txt'
-
-# Dictionary to store extracted tenant, ixn, and session ids
-session_id_details = {}
-
-# Read log lines from the file and extract tenant, ixn, and session ids
-with open(input_file_path, 'r') as file:
-    for log_line in file:
-        details = extract_tenant_ixn_from_log(log_line)
-        if details:
-            # Store unique records based on session_id
-            if details["session_id"] not in session_id_details:
-                session_id_details[details["session_id"]] = {"tenant_id": details["tenant_id"],"ixn_id": details["ixn_id"]}
-                print (session_id_details[details["session_id"]])
-
-# Write the results to the output file
-with open(output_file_path, 'w') as output_file:
-    # Read log lines again and apply the parsing function
-    with open(input_file_path, 'r') as file:
-        for log_line in file:
-            result = parse_trace_log(log_line, session_id_details)
-            if result:
-                output_file.write(str(result) + '\n')
+    print(f"Header as Object: {json.dumps(header_obj, indent=2)}")
+    print("=" * 50)

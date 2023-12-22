@@ -6,10 +6,22 @@
     <title>S.P.E.C.T.R.A. - SFS Log Analyzer</title>
     <style>
         body {
-            font-family: Arial, sans-serif;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background-color: #f4f4f4;
             text-align: center;
             padding: 20px;
+            margin: 0; /* Add margin to reset the default margin */
+        }
+         /* New style for the footer */
+        footer {
+            background-color: maroon;
+            color: white;
+            padding: 10px;
+            position: fixed;
+            bottom: 0;
+            left: 0; /* Align the left edge with the left edge of the viewport */
+            width: 100%; /* Make the footer full width */
+            box-sizing: border-box; /* Include padding and border in the total width */
         }
         h1 {
             color: #333;
@@ -53,7 +65,11 @@
         <input type="file" name="sfs_file" accept=".log" required>
         <br>
         <input type="submit" name="action" value="Analyze Worker threads">
-        <input type="submit" name="action" value="Display Report">
+        <input type="submit" name="action" value="Call Event Details">
+        <input type="submit" name="action" value="Summary report">
     </form>
+    <footer>
+        Utility developed by Shahzaib Khan
+    </footer>
 </body>
 </html>

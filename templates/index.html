@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="viewport" content="width=device-width, initial-scale=0">
     <title>S.P.E.C.T.R.A.</title>
     <style>
         body {
@@ -10,6 +10,18 @@
             background-color: #f4f4f4;
             text-align: center;
             padding: 20px;
+            margin: 0; /* Add margin to reset the default margin */
+        }
+         /* New style for the footer */
+         footer {
+            background-color: maroon;
+            color: white;
+            padding: 10px;
+            position: fixed;
+            bottom: 0;
+            left: 0; /* Align the left edge with the left edge of the viewport */
+            width: 100%; /* Make the footer full width */
+            box-sizing: border-box; /* Include padding and border in the total width */
         }
         h1 {
             color: maroon; /* Set the color to maroon */
@@ -63,5 +75,9 @@
         <li><a href="/logs"><button>Extract Logs</button></a></li>
         <!-- Add more services as needed -->
     </ul>
+     <!-- Footer -->
+     <footer>
+        Utility developed by <b>Shahzaib Khan</b>
+    </footer>
 </body>
 </html>

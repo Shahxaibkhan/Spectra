@@ -401,7 +401,7 @@ def upload_im():
 @app.route('/display_se_report', methods=['POST'])
 def upload_se():
     action = request.form['action']
-    if action == 'Analyze Vectors':
+    if action == 'Analyze Vector Details':
         return se_page.analyze_vectors() 
     elif action == 'Display Report':
         return se_page.generate_se_stats()
@@ -414,7 +414,9 @@ def upload_sfs():
     print(action)
     if action == 'Analyze Worker threads':
         return sfs_page.analyze_wrkr_threads() 
-    elif action == 'Display Report':
+    elif action == 'Call Event Details':
+        return sfs_page.extract_sfsim_details()
+    elif action == 'Summary report':
         return sfs_page.generate_sfs_stats()
     # elif action == 'Run Checks':
     #     return se_page.display_checks_stats()
