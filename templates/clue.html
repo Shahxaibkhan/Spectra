@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>C.L.U.E. - Chronological Log Unifier & Extractor</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #2C3E50; /* Change background color */
+            text-align: center;
+            padding: 20px;
+            margin: 0;
+            color: #ECF0F1; /* Change text color */
+        }
+
+        footer {
+            background-color: #1F2833; /* Change footer background color */
+            color: white;
+            padding: 10px;
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        h1 {
+            color: white; /* Change header text color */
+        }
+
+        form {
+            margin: 0 auto;
+            max-width: 600px;
+            background-color: #34495E; /* Change form background color */
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #ECF0F1; /* Change label text color */
+        }
+
+        input {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 15px;
+            border: 1px solid #1F2833; /* Change input border color */
+            border-radius: 4px;
+            box-sizing: border-box;
+            background-color: #2C3E50; /* Change input background color */
+            color: #ECF0F1; /* Change input text color */
+        }
+
+        .file-input-group {
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .remove-file {
+            cursor: pointer;
+            color: #1F2833; /* Change remove file color */
+            font-size: 20px;
+            background: none;
+            border: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .remove-file-button[disabled] {
+            color: #2C3E50;
+            cursor: default;
+        }
+
+        .add-file-button, .remove-file-button {
+            background-color: #1F2833; /* Change button background color */
+            color: white;
+            border: none;
+            padding: 10px;
+            border-radius: 4px;
+            border: 1px solid #1F2833;
+            cursor: pointer;
+            width: calc(50% - 3px); /* 50% width minus 5px spacing */
+        }
+
+        .remove-file-button:hover:not([disabled]) {
+   
+            background-color: #2C3E50; /* Change remove button color on hover */
+        }
+
+        .log-levels {
+            display: flex;
+            align-items: center;
+            justify-content: space-around;
+            margin-bottom: 15px;
+        }
+
+        .log-levels label {
+            margin-right: 10px;
+            font-size: 14px;
+            color: #ECF0F1; /* Change log level label color */
+        }
+
+        /* Hide the default radio button */
+        .log-levels input[type="radio"] {
+            display: none;
+        }
+
+      
+        input, textarea, form, body {
+        caret-color: transparent;
+        }
+
+        .custom-radio {
+            margin-right: 5px;
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 2px solid #1F2833; /* Border color for unchecked state */
+            border-radius: 50%;
+            background-color: #2C3E50; /* Background color for unchecked state */
+            position: relative;
+            transition: background-color 0.3s, border-color 0.3s;
+        }
+
+        /* Style the custom radio button when checked */
+        input[type="radio"]:checked + .custom-radio::before {
+            content: '';
+            width: 12px;
+            height: 12px;
+            background-color: #1F2833; /* Color for checked state */
+            border-radius: 50%;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+
+        /* Adjust the label positioning */
+        .log-levels label {
+            display: flex;
+            align-items: center;
+            margin-right: 10px;
+            font-size: 14px;
+            color: #ECF0F1; /* Change log level label color */
+        }
+
+        input[type="submit"] {
+            margin-top: 5px;
+            background-color: #1F2833;
+            color: #fff;
+            cursor: pointer;
+            width: 100%;
+        }
+
+        .add-file-button:hover, input[type="submit"]:hover {
+            background-color: #2C3E50;
+        }
+    </style>
+</head>
+<body>
+    <h1>C.L.U.E.</h1>
+    <h2>(Chronological Log Unifier & Extractor)</h2>
+    <br><br>
+    <form method="post" action="/upload-log" enctype="multipart/form-data">
+        <div id="fileInputsContainer">
+            <div class="file-input-group">
+                <label for="log_file">Upload Log Files:</label>
+                <br><br>
+                <input type="file" name="log_file[]" accept=".log" required>
+            </div>
+        </div>
+
+        <div class="log-levels">
+            <label>
+                <input type="radio" name="log_level" value="TRACE" checked>
+                <div class="custom-radio"></div> TRACE
+            </label>
+            <label>
+                <input type="radio" name="log_level" value="DEBUG" >
+                <div class="custom-radio"></div> DEBUG
+            </label>
+            <label>
+                <input type="radio" name="log_level" value="ERROR" >
+                <div class="custom-radio"></div> ERROR
+            </label>
+            <label>
+                <input type="radio" name="log_level" value="ALL" >
+                <div class="custom-radio"></div> ALL
+            </label>
+        </div>
+        <br>
+        <button type="button" class="add-file-button" onclick="addFileInput()">Add File</button>
+        <button type="button" class="remove-file-button" onclick="removeLastFileInput()" disabled>Remove Last File</button>
+        <input type="submit" name="action" value="Unify and Extract">
+    </form>
+
+    <script>
+        function addFileInput() {
+            const fileInputsContainer = document.getElementById('fileInputsContainer');
+            const newInput = document.createElement('div');
+            newInput.className = 'file-input-group';
+            newInput.innerHTML = `
+                <input type="file" name="log_file[]" accept=".log" required>
+            `;
+            fileInputsContainer.appendChild(newInput);
+            updateRemoveButtons();
+        }
+
+        function removeFileInput(element) {
+            const fileInputsContainer = document.getElementById('fileInputsContainer');
+            fileInputsContainer.removeChild(element.parentNode);
+            updateRemoveButtons();
+        }
+
+        function updateRemoveButtons() {
+            const removeFileButton = document.querySelector('.remove-file-button');
+            removeFileButton.disabled = document.querySelectorAll('.file-input-group').length <= 1;
+        }
+
+        function removeLastFileInput() {
+            const fileInputsContainer = document.getElementById('fileInputsContainer');
+            const lastInput = fileInputsContainer.lastElementChild;
+            if (lastInput && lastInput.className === 'file-input-group') {
+                fileInputsContainer.removeChild(lastInput);
+                updateRemoveButtons();
+            }
+        }
+    </script>
+    <footer>
+        Utility developed by <b>Shahzaib Khan</b>
+    </footer>
+</body>
+</html>

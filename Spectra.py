@@ -347,43 +347,6 @@ def analyze_se():
 def analyze_sfs():
     return sfs_page.analyze() 
 
-@app.route('/logs')
-def analyze_logs():
-    # Implement your IM analysis logic here
-   return render_template('logs_extractor.html')
-
-@app.route('/add_file', methods=['POST'])
-def add_file():
-    global log_files
-    file = request.files['file']
-    log_files.append(file)
-    return '', 204
-
-@app.route('/extract_logs', methods=['POST'])
-def extract_logs():
-    global log_files
-
-    selected_log_type = request.form['logType']
-    logs = []
-
-    for file in log_files:
-        content = file.stream.read().decode('utf-8')
-        lines = content.split('\n')
-
-        for line in lines:
-            if selected_log_type in line:
-                logs.append(line)
-
-    logs.sort(key=lambda x: x.split(' ')[0])
-
-    merged_logs = '\n'.join(logs)
-
-    output = StringIO()
-    output.write(merged_logs)
-    output.seek(0)
-
-    return send_file(output, as_attachment=True, download_name='merged_logs.txt')
-
 
 @app.route('/upload-sfsse', methods=['POST'])
 def upload_sfsse():
@@ -463,4 +426,4 @@ def plot_im_ams_results():
 
 
 if __name__ == '__main__':
-    app.run(port=3001)
+    app.run(debug=True, port=3001)
