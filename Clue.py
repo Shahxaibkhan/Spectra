@@ -12,7 +12,7 @@ app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
 @app.route('/')
 def index():
-    return render_template('logs_extractor.html')
+    return render_template('clue.html')
 
 def process_logs(log_files, log_level):
     unified_logs = []

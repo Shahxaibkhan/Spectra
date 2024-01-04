@@ -14,24 +14,27 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
   <style>
-     body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: #f4f4f4;
-            text-align: center;
-            padding: 20px;
-            margin: 0; /* Add margin to reset the default margin */
-        }
-         /* New style for the footer */
-      footer {
-            background-color: maroon;
-            color: white;
-            padding: 10px;
-            position: fixed;
-            bottom: 0;
-            left: 0; /* Align the left edge with the left edge of the viewport */
-            width: 100%; /* Make the footer full width */
-            box-sizing: border-box; /* Include padding and border in the total width */
-        }
+    .collapsible-table {
+      display: none;
+    }
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: #f4f4f4;
+      text-align: center;
+      padding: 20px;
+      margin: 0; /* Add margin to reset the default margin */
+    }
+
+    footer {
+      background-color: maroon;
+      color: white;
+      padding: 10px;
+      position: fixed;
+      bottom: 0;
+      left: 0; /* Align the left edge with the left edge of the viewport */
+      width: 100%; /* Make the footer full width */
+      box-sizing: border-box; /* Include padding and border in the total width */
+    }
 
     h1 {
       color: #800000;
@@ -39,7 +42,9 @@
     }
 
     .summary-table,
-    .interaction-table {
+    .interaction-table,
+    .dn-change-table,
+    .vector-change-table {
       width: 80%;
       margin: 20px auto;
       border-collapse: collapse;
@@ -51,20 +56,36 @@
     .summary-table th,
     .summary-table td,
     .interaction-table th,
-    .interaction-table td {
+    .interaction-table td,
+    .dn-change-table th,
+    .dn-change-table td,
+    .vector-change-table th,
+    .vector-change-table td {
       padding: 15px;
       border: 1px solid #ddd;
       text-align: left;
     }
 
     .summary-table th,
-    .interaction-table th {
+    .interaction-table th,
+    .dn-change-table th,
+    .vector-change-table th {
       background-color: #800000;
       color: #fff;
     }
 
     .interaction-table th {
       background-color: #007bff;
+      color: #fff;
+    }
+
+    .dn-change-table th {
+      background-color: #228B22;
+      color: #fff;
+    }
+
+    .vector-change-table th {
+      background-color: #4B0082;
       color: #fff;
     }
 
@@ -78,13 +99,55 @@
       width: 300px;
       height: 300px;
     }
+
+    .toggle-button {
+      background-color: maroon;
+      color: #fff;
+      padding: 10px;
+      border: none;
+      cursor: pointer;
+      font-size: 16px;
+      transition: background-color 0.3s;
+    }
+
+    .toggle-button:hover {
+      background-color: #800000;
+    }
+
+    .toggle-icon {
+      display: inline-block;
+      margin-right: 5px;
+    }
+
+    .table-separator {
+      border-top: 2px solid #800000;
+      margin-top: 20px;
+    }
   </style>
+  <script>
+    // Function to toggle the visibility of the table
+    function toggleTable(tableId, buttonId) {
+      var table = document.getElementById(tableId);
+      var button = document.getElementById(buttonId);
+      if (table.style.display === 'none') {
+        table.style.display = 'table';
+        button.innerHTML = '<span class="toggle-icon">➖</span> Hide Table';
+      } else {
+        table.style.display = 'none';
+        button.innerHTML = '<span class="toggle-icon">➕</span> Show Table';
+      }
+    }
+  </script>
 </head>
 
 <body>
   <h1>Summary Report</h1>
 
-  <table id="summaryTable" class="display">
+   <!-- Use a div for better styling of the toggle button -->
+   <div class="toggle-button" id="summaryButton" onclick="toggleTable('summaryTable', 'summaryButton')">
+    <span  class="toggle-icon">➖</span> Hide Table
+  </div>
+  <table id="summaryTable" class="display collapsible-table">
     <thead>
       <tr>
         <th>Statistic</th>
@@ -93,8 +156,8 @@
     </thead>
     <tbody>
       <tr>
-        <td>Total Calls</td>
-        <td>{{ summary_report.total_calls }}</td>
+        <td>Total Ixns</td>
+        <td>{{ summary_report.total_ixns }}</td>
       </tr>
       <tr>
         <td>Total Vectors Executed</td>
@@ -124,12 +187,25 @@
         <td>Vectors Loading Compilation Time (s)</td>
         <td>{{ summary_report.compilation_time }}</td>
       </tr>
+      <tr>
+        <td>Number of DN(s) added</td>
+        <td>{{ summary_report.dn_added_count }}</td>
+      </tr>
+      <tr>
+        <td>Number of DN(s) edited</td>
+        <td>{{ summary_report.dn_edited_count }}</td>
+      </tr>
+      <tr>
+        <td>Number of Vector(s) added</td>
+        <td>{{ summary_report.vector_added_count }}</td>
+      </tr>
+      <tr>
+        <td>Number of Vector(s) edited</td>
+        <td>{{ summary_report.vector_edited_count }}</td>
+      </tr>
     </tbody>
   </table>
 
-
-  
-  
   <div class="table-separator"></div>
 
   <h1>Interaction Flow Statistics</h1>
@@ -161,62 +237,138 @@
     </tbody>
   </table>
 
+  <!-- Table for DN Change Details -->
   <div class="table-separator"></div>
+  <h1>DN Change Details</h1>
+
+  <table id="dnChangeTable" class="display">
+    <thead>
+      <tr>
+        <th>Operation</th>
+        <th>DN Number (Key)</th>
+        <th>DN Name</th>
+        <th>Event Time</th>
+        <th>Vector Used</th>
+        <th>Tenant Name</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for dn_detail in summary_report.dn_details %}
+      <tr>
+        <td>{{ dn_detail.request.request_type }}</td>
+        <td>{{ dn_detail.request.key }}</td>
+        <td>{{ dn_detail.request.payload_details.data.name }}</td>
+        <td>{{ dn_detail.request.event_time }}</td>
+        <td>{{ dn_detail.request.payload_details.data.vectorId.id }}</td>
+        <td>{{ dn_detail.request.tenant_name }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <!-- Table for Vector Change Details -->
+  <div class="table-separator"></div>
+  <h1>Vector Change Details</h1>
+
+  <table id="vectorChangeTable" class="display">
+    <thead>
+        <tr>
+            <th>Operation</th>
+            <th>Vector ID (Key)</th>
+            <th>Name</th>
+            <th>Processing Time</th>
+            <th>Tenant Name</th>
+            <th>Event Time</th>
+        </tr>
+    </thead>
+    <tbody>
+      {% for vector_group in summary_report.vector_details %}
+          {% for request in vector_group.requests %}
+              <tr>
+                  <td>{{ request.request_type }}</td>
+                  <td>{{ request.key }}</td>
+                  <td>{{ request.payload_details.data.name }}</td>
+                  <td>{{ request.processing_time }}</td>
+                  <td>{{ request.tenant_name }}</td>
+                  <td>{{ request.event_time }}</td>
+              </tr>
+          {% endfor %}
+      {% endfor %}
+  </tbody>
+  </table>
+
+  <div class="table-separator"></div>
+
   <h1>Interaction Flow Distribution</h1>
   <canvas id="vectorIdLineChart"></canvas>
 
   <!-- Initialize DataTables and Line Chart -->
   <script>
-      $(document).ready(function () {
-          // Initialize DataTables
-          $('#interactionTable').DataTable();
-          $('#summaryTable').DataTable();
 
-          // Extract vector_id_counts from summary_report
-          var vectorIdCounts = {{ summary_report.vector_id_counts|tojson }};
+        // Function to toggle the visibility of the table
+    // Function to toggle the visibility of the table and change the button text
+    function toggleTable(tableId, buttonId) {
+      var table = document.getElementById(tableId);
+      var button = document.getElementById(buttonId);
+      if (table.style.display === 'none') {
+        table.style.display = 'table';
+        button.innerHTML = '<span class="toggle-icon">➖</span> Hide Table';
+      } else {
+        table.style.display = 'none';
+        button.innerHTML = '<span class="toggle-icon">➕</span> Show Table';
+      }
+    }
 
-          // Extract labels and data for the line chart
-          var labels = Object.keys(vectorIdCounts);
-          var data = Object.values(vectorIdCounts);
+    $(document).ready(function () {
+      // Initialize DataTables
+      $('#interactionTable').DataTable();
+      $('#summaryTable').DataTable();
+      $('#dnChangeTable').DataTable();
+      $('#vectorChangeTable').DataTable();
 
-          // Set up the line chart
-          var ctx = document.getElementById('vectorIdLineChart').getContext('2d');
-          var vectorIdLineChart = new Chart(ctx, {
-              type: 'line',
-              data: {
-                  labels: labels,
-                  datasets: [{
-                      label: 'Vector ID Counts',
-                      data: data,
-                      borderColor: 'maroon', // Line color
-                      borderWidth: 2, // Line width
-                      fill: false, // Do not fill area under the line
-                  }]
-              },
-              options: {
-                  legend: {
-                      labels: {
-                          font: {
-                              size: 12, // Legend font size
-                          }
-                      }
-                  },
-                  scales: {
-                      x: {
-                          type: 'category', // Use category scale for x-axis
-                          position: 'bottom',
-                      },
-                      y: {
-                          type: 'linear', // Use linear scale for y-axis
-                          position: 'left',
-                      },
-                  }
+      // Extract vector_id_counts from summary_report
+      var vectorIdCounts = {{ summary_report.vector_id_counts|tojson }};
+
+      // Extract labels and data for the line chart
+      var labels = Object.keys(vectorIdCounts);
+      var data = Object.values(vectorIdCounts);
+
+      // Set up the line chart
+      var ctx = document.getElementById('vectorIdLineChart').getContext('2d');
+      var vectorIdLineChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: labels,
+          datasets: [{
+            label: 'Vector ID Counts',
+            data: data,
+            borderColor: 'maroon', // Line color
+            borderWidth: 2, // Line width
+            fill: false, // Do not fill area under the line
+          }]
+        },
+        options: {
+          legend: {
+            labels: {
+              font: {
+                size: 12, // Legend font size
               }
-          });
+            }
+          },
+          scales: {
+            x: {
+              type: 'category', // Use category scale for x-axis
+              position: 'bottom',
+            },
+            y: {
+              type: 'linear', // Use linear scale for y-axis
+              position: 'left',
+            },
+          }
+        }
       });
-</script>
+    });
+  </script>
 </body>
 
 </html>
-
-     
