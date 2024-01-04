@@ -50,16 +50,23 @@ class SEPage(BasePage):
         # Return the generated summary report to be displayed in the HTML template
         return render_template('vector_stats.html', summary_report=summary_report)
 
+    
+
     def generate_summary_report(self):
         log_file = self.file_upload_and_processing_logs()
         vector_stats = self.generate_vector_stats(log_file)
         check_results = self.generate_checks(log_file)
-        check_dn_details = self.dn_details(log_file)
-
-      
+        check_dn_details_json = self.dn_details(log_file)
+        check_vector_details_json = self.vector_details(log_file)
 
         # Process results for summary report
         total_calls = len(vector_stats)
+
+        # Parse the JSON string into a list of dictionaries
+        check_dn_details = json.loads(check_dn_details_json)
+
+        check_vector_details = json.loads(check_vector_details_json)
+
 
         # Extract unique vector_ids from vector_stats and count occurrences
         vector_id_counts = {}
@@ -74,13 +81,17 @@ class SEPage(BasePage):
         max_processing_vector = None
         min_processing_vector = None
 
-        # Check if vector_stats is not empty before finding max and min
+                # Check if vector_stats is not empty before finding max and min
         if vector_stats:
             # Find the vector with maximum processing time
             max_processing_vector = max(vector_stats, key=lambda x: x.get('total_execution_time', 0))
 
             # Find the vector with minimum processing time
             min_processing_vector = min(vector_stats, key=lambda x: x.get('total_execution_time', 0))
+        else:
+            # Handle the case when vector_stats is empty
+            max_processing_vector = {"vector_id": "N/A", "total_execution_time": "N/A"}
+            min_processing_vector = {"vector_id": "N/A", "total_execution_time": "N/A"}
 
         # Extract vectors loaded and compilation time from check_results
         vectors_loaded = 0
@@ -91,6 +102,41 @@ class SEPage(BasePage):
                 vectors_loaded = check_result["vectors_loaded"]
                 compilation_time = check_result["compilation_time"]
                 break
+
+        # Count the number of DN added and edited
+        dn_added_count = 0
+        dn_edited_count = 0
+
+        for dn_detail in check_dn_details:
+            request_type = dn_detail.get('request', {}).get('request_type', '').lower()
+            if request_type == 'insert':
+                dn_added_count += 1
+            elif request_type == 'change':
+                dn_edited_count += 1
+
+        # Count the number of Vectors added and edited
+        vector_added_count = 0
+        vector_edited_count = 0
+
+        for vector_detail in check_vector_details:
+            # print("vector_detail:", vector_detail)  # Add this line
+            print("##" * 100)
+            
+            # Check if 'requests' key exists and is a list
+            if 'requests' in vector_detail and isinstance(vector_detail['requests'], list):
+                for request in vector_detail['requests']:
+                    print("request:", request)  # Add this line
+                    print("0" * 100)
+                    
+                    request_type = request.get('request_type', '').lower()
+                    print("request_type:", request_type)  # Add this line
+                    
+                    if request_type == 'insert':
+                        vector_added_count += 1
+                    elif request_type == 'change':
+                        vector_edited_count += 1
+            else:
+                print("Invalid or missing 'requests' key in vector_detail")
 
         summary_report = {
             "total_ixns": total_calls,
@@ -106,38 +152,193 @@ class SEPage(BasePage):
             "vectors_loaded": vectors_loaded,
             "compilation_time": compilation_time,
             "vector_stats_details": vector_stats,
-            "vector_id_counts": vector_id_counts
+            "dn_details": check_dn_details,
+            "vector_details": check_vector_details,
+            "vector_id_counts": vector_id_counts,
+            "dn_added_count": dn_added_count,
+            "dn_edited_count": dn_edited_count,
+            "vector_added_count": vector_added_count,
+            "vector_edited_count": vector_edited_count
         }
+
         return summary_report
 
 
+    def vector_details(self, logs):
+        details_map = {}
 
-    def dn_details(self,logs):
-        details_list = []
+        # Initialize key_map
+        key_map = {}
 
+        current_key_info = None
+
+        # Process logs sequentially
         for log in logs:
-            # Use a regular expression to capture the required details
-            match = re.search(r'\[ Received routing-entity-(\w+) event with id: \w+ tenant: (\w+) entity: (\w+) key: (\d+) event time: (\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d+Z) \]~~', log)
-
+            # Extract keys from the first set of logs
+            match = re.search(r'\[ Received routing-entity-(\w+) event with id: (\w+) tenant: (\w+) entity: vector key: (\d+) event time: (\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d+Z) \]~~', log)
             if match:
-                request_type = match.group(1)  # add or change
-                tenant_name = match.group(2)
-                entity = match.group(3)
                 key = int(match.group(4))
+                request_type = match.group(1)
+                tenant_name = match.group(3)
+                entity_type = "vector"
                 event_time = match.group(5)
 
-                # Add details to the list
-                details_list.append({
+                current_key_info = {
                     "request_type": request_type,
                     "tenant_name": tenant_name,
-                    "entity": entity,
+                    "entity": entity_type,
                     "key": key,
-                    "event_time": event_time,
-                })
-                print(details_list)
-                print('#'*50)
+                    "event_time": datetime.strptime(event_time, '%Y-%m-%dT%H:%M:%S.%fZ'),
+                }
 
-        return details_list
+                key_map.setdefault(key, {"request": None, "requests": []})
+                key_map[key]["requests"].append(current_key_info)
+                key_map[key]["request"] = current_key_info
+
+            # Process payload logs
+            payload_match = re.search(r'Payload:(.*?)]~~', log)
+            if payload_match:
+                payload_str = payload_match.group(1).strip()
+
+                try:
+                    payload_details = json.loads(payload_str)
+                    key_from_payload = int(payload_details.get("key", -1))
+                    entity_type_from_payload = payload_details.get("type")
+                    if key_from_payload in key_map:
+                        for request in key_map[key_from_payload]["requests"]:
+                            if not request.get("payload_details") and entity_type_from_payload == request.get("entity"):
+                                request["payload_details"] = payload_details
+                except json.JSONDecodeError as e:
+                    print(f"Error decoding JSON: {e}")
+
+            # Look for synchronization logs
+            sync_match = re.search(r'(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2},\d{3}) \[\d+\]  DEBUG: \[ ScriptExecutor::compileVectorRE > Vector updated\. ID:(\d+)\|(\d+\.\d+\.\d+) \]', log)
+            if sync_match:
+                log_timestamp = sync_match.group(1)
+                entity_key = int(sync_match.group(2))
+
+                try:
+                    entity_id = int(sync_match.group(3).split('.')[-1])
+                    if entity_id in key_map:
+                        for request in key_map[entity_id]["requests"]:
+                            if not request.get("sync_details"):                   
+                                sync_time = datetime.strptime(log_timestamp, '%Y-%m-%d %H:%M:%S,%f')
+                                # Extract event_time from the request
+                                event_time = request.get("event_time")
+
+                                if event_time:
+                                    # Convert both sync_time and event_time to timestamps (floats)
+                                    sync_timestamp = sync_time.timestamp()
+                                    event_timestamp = event_time.timestamp()
+
+                                    # Calculate processing time
+                                    processing_time_seconds = sync_timestamp - event_timestamp
+
+                                    # Add processing time directly to the request
+                                    request["processing_time"] = processing_time_seconds
+
+                                # Add synchronization details to the correct key in key_map
+                                sync_details = {
+                                    "entity_key": entity_key,
+                                    "entity_id": entity_id,
+                                    "sync_time": sync_time,
+                                }
+                                key_map[entity_id]["request"]["sync_logs"] = sync_details
+                except json.JSONDecodeError as e:
+                    print(f"Error decoding JSON: {e}")
+
+        # Sort requests within each key based on timestamps
+        for key in key_map:
+            key_map[key]["requests"] = sorted(key_map[key]["requests"], key=lambda x: x["event_time"])
+
+        # Convert key_map to a list before returning
+        result_list = [{"requests": v["requests"]} for v in key_map.values()]
+
+
+        # Convert the result to JSON-formatted string
+        result_json = json.dumps(result_list, default=str)
+        print(f"final step: {result_json}")
+        return result_json
+
+
+    def dn_details(self, logs):
+        details_map = {}
+
+        # Initialize key_map
+        key_map = {}
+
+        current_key_info = None
+
+        # Process logs sequentially
+        for log in logs:
+            # Extract keys from the first set of logs
+            match = re.search(r'\[ Received routing-entity-(\w+) event with id: (\w+) tenant: (\w+) entity: callType key: (\d+) event time: (\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d+Z) \]~~', log)
+            if match:
+                key = int(match.group(4))
+                request_type = match.group(1)
+                tenant_name = match.group(3)
+                entity_type = "callType"
+                event_time = match.group(5)
+
+                current_key_info = {
+                    "request_type": request_type,
+                    "tenant_name": tenant_name,
+                    "entity": entity_type,
+                    "key": key,
+                    "event_time": datetime.strptime(event_time, '%Y-%m-%dT%H:%M:%S.%fZ'),
+                }
+
+                key_map[key] = {
+                    "request": None,
+                    "sync_logs": [],
+                }
+
+                key_map[key]["request"] = current_key_info
+
+            # Process payload logs
+            payload_matches = re.finditer(r'Payload:(.*?)]~~', log)
+            for payload_match in payload_matches:
+                payload_str = payload_match.group(1).strip()
+
+                try:
+                    payload_details = json.loads(payload_str)
+                    key_from_payload = int(payload_details.get("key", -1))
+                    entity_type_from_payload = payload_details.get("type")
+
+                    if key_from_payload in key_map and entity_type_from_payload == key_map[key_from_payload]["request"]["entity"]:
+                        key_map[key_from_payload]["request"]["payload_details"] = payload_details
+
+                except json.JSONDecodeError as e:
+                    print(f"Error decoding JSON: {e}")
+
+            # # Look for synchronization logs
+            # sync_match = re.search(r'DN synchronized, DN:\d+\|(\d+\.\d+\.\d+)', log)
+            # if sync_match and current_key_info:
+            #     sync_id = sync_match.group(1)
+            #     log_timestamp_match = re.search(r'^(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2},\d{3})', log)
+            #     if log_timestamp_match:
+            #         log_timestamp = log_timestamp_match.group(1)
+            #         sync_time = datetime.strptime(log_timestamp, '%Y-%m-%d %H:%M:%S,%f')
+            #         entity_id = int(sync_id.split('.')[-1])
+            #         print("entity id:",entity_id )
+            #         print("key map: ",  key_map["request"]["payload_details"]["data"]["id"])
+            #         print("#"*100)
+            #         # Check if the sync log is associated with the current Received routing-entity event
+            #         if entity_id == key_map["request"]["payload_details"]["data"]["id"]:
+            #             key_map[key_from_payload]["sync_logs"].append({
+            #                 "sync_id": sync_id,
+            #                 "sync_time": sync_time,
+            #             })
+
+        # Convert key_map to a list before returning
+        result_list = [v for v in key_map.values()]
+
+        # Convert the result to JSON-formatted string
+        result_json = json.dumps(result_list, default=str)
+        # print(f"final step: {result_json}")
+        return result_json
+
+
 
     def generate_checks(self,logs):
         
