@@ -41,6 +41,7 @@
       margin-bottom: 20px;
     }
 
+    .processingTable,
     .summary-table,
     .interaction-table,
     .dn-change-table,
@@ -59,6 +60,8 @@
     .interaction-table td,
     .dn-change-table th,
     .dn-change-table td,
+    .processingTable th,
+    .processingTable td,
     .vector-change-table th,
     .vector-change-table td {
       padding: 15px;
@@ -66,6 +69,7 @@
       text-align: left;
     }
 
+    .processingTable th,
     .summary-table th,
     .interaction-table th,
     .dn-change-table th,
@@ -100,54 +104,16 @@
       height: 300px;
     }
 
-    .toggle-button {
-      background-color: maroon;
-      color: #fff;
-      padding: 10px;
-      border: none;
-      cursor: pointer;
-      font-size: 16px;
-      transition: background-color 0.3s;
-    }
 
-    .toggle-button:hover {
-      background-color: #800000;
-    }
-
-    .toggle-icon {
-      display: inline-block;
-      margin-right: 5px;
-    }
-
-    .table-separator {
-      border-top: 2px solid #800000;
-      margin-top: 20px;
-    }
   </style>
-  <script>
-    // Function to toggle the visibility of the table
-    function toggleTable(tableId, buttonId) {
-      var table = document.getElementById(tableId);
-      var button = document.getElementById(buttonId);
-      if (table.style.display === 'none') {
-        table.style.display = 'table';
-        button.innerHTML = '<span class="toggle-icon">➖</span> Hide Table';
-      } else {
-        table.style.display = 'none';
-        button.innerHTML = '<span class="toggle-icon">➕</span> Show Table';
-      }
-    }
-  </script>
+
 </head>
 
 <body>
-  <h1>Summary Report</h1>
+  <h1><u>Summary Report</u></h1>
 
-   <!-- Use a div for better styling of the toggle button -->
-   <div class="toggle-button" id="summaryButton" onclick="toggleTable('summaryTable', 'summaryButton')">
-    <span  class="toggle-icon">➖</span> Hide Table
-  </div>
-  <table id="summaryTable" class="display collapsible-table">
+  <!-- Use a div for better styling of the toggle button -->
+  <table id="summaryTable" class="display">
     <thead>
       <tr>
         <th>Statistic</th>
@@ -160,47 +126,30 @@
         <td>{{ summary_report.total_ixns }}</td>
       </tr>
       <tr>
-        <td>Total Vectors Executed</td>
+        <td>Total Interaction-Flow(s) Executed</td>
         <td>{{ summary_report.total_vectors }}</td>
       </tr>
-      <tr>
-        <td>Max Processing Vector ID</td>
-        <td>{{ summary_report.max_processing_vector.vector_id }}</td>
-      </tr>
-      <tr>
-        <td>Max Processing Time (μs)</td>
-        <td>{{ summary_report.max_processing_vector.total_execution_time }}</td>
-      </tr>
-      <tr>
-        <td>Min Processing Vector ID</td>
-        <td>{{ summary_report.min_processing_vector.vector_id }}</td>
-      </tr>
-      <tr>
-        <td>Min Processing Time (μs)</td>
-        <td>{{ summary_report.min_processing_vector.total_execution_time }}</td>
-      </tr>
-      <tr>
-        <td>Vectors Loaded</td>
+        <td>No. Of Interaction-Flow(s) Loaded</td>
         <td>{{ summary_report.vectors_loaded }}</td>
       </tr>
       <tr>
-        <td>Vectors Loading Compilation Time (s)</td>
+        <td>Interaction-Flow(s) Loading Compilation Time (s)</td>
         <td>{{ summary_report.compilation_time }}</td>
       </tr>
       <tr>
-        <td>Number of DN(s) added</td>
+        <td>Number of Entry-Point(s) added</td>
         <td>{{ summary_report.dn_added_count }}</td>
       </tr>
       <tr>
-        <td>Number of DN(s) edited</td>
+        <td>Number of Entry-Point(s) edited</td>
         <td>{{ summary_report.dn_edited_count }}</td>
       </tr>
       <tr>
-        <td>Number of Vector(s) added</td>
+        <td>Number of Interaction-Flow(s) added</td>
         <td>{{ summary_report.vector_added_count }}</td>
       </tr>
       <tr>
-        <td>Number of Vector(s) edited</td>
+        <td>Number of Interaction-Flow(s) edited</td>
         <td>{{ summary_report.vector_edited_count }}</td>
       </tr>
     </tbody>
@@ -208,7 +157,64 @@
 
   <div class="table-separator"></div>
 
-  <h1>Interaction Flow Statistics</h1>
+
+
+  <h1><u>Processing Statistics</u></h1>
+
+   <!-- Use a div for better styling of the toggle button -->
+  <table id="processingTable" class="display">
+    <thead>
+      <tr>
+        <th>Statistics</th>
+        <th>Minimum Processing Time </th>
+        <th> ID (min) </th>
+        <th>Maximum Processing Time </th>
+        <th>ID (max)</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Interaction-Flow Execution</td>
+        <td>{{ summary_report.min_processing_vector.total_execution_time }} (μs)</td>
+        <td>{{ summary_report.min_processing_vector.vector_id }}</td>
+        <td>{{ summary_report.max_processing_vector.total_execution_time }} (μs)</td>
+        <td>{{ summary_report.max_processing_vector.vector_id }}</td>
+      </tr>
+      <tr>
+        <td>Entry Points Add</td>
+        <td>{{ summary_report.min_processing_dn.insert.total_execution_time }} (ms)</td>
+        <td>{{ summary_report.min_processing_dn.insert.dn_id }}</td>
+        <td>{{ summary_report.max_processing_dn.insert.total_execution_time }} (ms)</td>
+        <td>{{ summary_report.max_processing_dn.insert.dn_id }}</td>
+      </tr>
+      <tr>
+        <td>Entry Points Edit</td>
+        <td>{{ summary_report.min_processing_dn.change.total_execution_time }} (ms)</td>
+        <td>{{ summary_report.min_processing_dn.change.dn_id }}</td>
+        <td>{{ summary_report.max_processing_dn.change.total_execution_time }} (ms)</td>
+        <td>{{ summary_report.max_processing_dn.change.dn_id }}</td>
+      </tr>
+      <tr>
+        <td>Interaction-Flow Add</td>
+        <td>{{ summary_report.min_processing_vec.insert.total_execution_time }} (ms)</td>
+        <td>{{ summary_report.min_processing_vec.insert.vec_id }}</td>
+        <td>{{ summary_report.max_processing_vec.insert.total_execution_time }} (ms)</td>
+        <td>{{ summary_report.max_processing_vec.insert.vec_id }}</td>
+      </tr>
+      <tr>
+        <td>Interaction-Flow Edit</td>
+        <td>{{ summary_report.min_processing_vec.change.total_execution_time }} (ms)</td>
+        <td>{{ summary_report.min_processing_vec.change.vec_id }}</td>
+        <td>{{ summary_report.max_processing_vec.change.total_execution_time }} (ms)</td>
+        <td>{{ summary_report.max_processing_vec.change.vec_id }}</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="table-separator"></div>
+
+
+  <h1><u>Interaction-Flow(s) Statistics</u></h1>
 
   <table id="interactionTable" class="display">
     <thead>
@@ -239,42 +245,46 @@
 
   <!-- Table for DN Change Details -->
   <div class="table-separator"></div>
-  <h1>DN Change Details</h1>
+  <h1><u>Entery Point(s) Change Details</u></h1>
 
   <table id="dnChangeTable" class="display">
     <thead>
       <tr>
         <th>Operation</th>
-        <th>DN Number (Key)</th>
-        <th>DN Name</th>
+        <th>Entery Point Number (Key)</th>
+        <th>Entery Point Name</th>
+        <th>Processing Time</th>
         <th>Event Time</th>
-        <th>Vector Used</th>
+        <th>Interaction-Flow Used</th>
         <th>Tenant Name</th>
       </tr>
     </thead>
     <tbody>
-      {% for dn_detail in summary_report.dn_details %}
-      <tr>
-        <td>{{ dn_detail.request.request_type }}</td>
-        <td>{{ dn_detail.request.key }}</td>
-        <td>{{ dn_detail.request.payload_details.data.name }}</td>
-        <td>{{ dn_detail.request.event_time }}</td>
-        <td>{{ dn_detail.request.payload_details.data.vectorId.id }}</td>
-        <td>{{ dn_detail.request.tenant_name }}</td>
-      </tr>
+      {% for entry in summary_report.dn_details %}
+        {% for request in entry.requests %}
+          <tr>
+            <td>{{ request.request_type }}</td>
+            <td>{{ request.key }}</td>
+            <td>{{ request.payload_details.data.name }}</td>
+            <td>{{ request.processing_time }}</td>
+            <td>{{ request.event_time }}</td>
+            <td>{{ request.payload_details.data.vectorId.id }}</td>
+            <td>{{ request.tenant_name }}</td>
+          </tr>
+        {% endfor %}
       {% endfor %}
     </tbody>
   </table>
 
   <!-- Table for Vector Change Details -->
   <div class="table-separator"></div>
-  <h1>Vector Change Details</h1>
+  <h1><u>Interaction Flow(s) Change Details</u></h1>
 
   <table id="vectorChangeTable" class="display">
     <thead>
         <tr>
             <th>Operation</th>
-            <th>Vector ID (Key)</th>
+            <th>Interaction-Flow ID (Key)</th>
             <th>Name</th>
             <th>Processing Time</th>
             <th>Tenant Name</th>
@@ -299,25 +309,11 @@
 
   <div class="table-separator"></div>
 
-  <h1>Interaction Flow Distribution</h1>
+  <h1><u>Interaction Flow Distribution</u></h1>
   <canvas id="vectorIdLineChart"></canvas>
 
   <!-- Initialize DataTables and Line Chart -->
   <script>
-
-        // Function to toggle the visibility of the table
-    // Function to toggle the visibility of the table and change the button text
-    function toggleTable(tableId, buttonId) {
-      var table = document.getElementById(tableId);
-      var button = document.getElementById(buttonId);
-      if (table.style.display === 'none') {
-        table.style.display = 'table';
-        button.innerHTML = '<span class="toggle-icon">➖</span> Hide Table';
-      } else {
-        table.style.display = 'none';
-        button.innerHTML = '<span class="toggle-icon">➕</span> Show Table';
-      }
-    }
 
     $(document).ready(function () {
       // Initialize DataTables
@@ -325,6 +321,7 @@
       $('#summaryTable').DataTable();
       $('#dnChangeTable').DataTable();
       $('#vectorChangeTable').DataTable();
+      $('#processingTable').DataTable();
 
       // Extract vector_id_counts from summary_report
       var vectorIdCounts = {{ summary_report.vector_id_counts|tojson }};
