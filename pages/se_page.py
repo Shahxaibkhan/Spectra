@@ -65,7 +65,60 @@ class SEPage(BasePage):
         # Parse the JSON string into a list of dictionaries
         check_dn_details = json.loads(check_dn_details_json)
 
+        # Initialize variables for max and min processing times
+        max_processing_times_dn = {'insert': float('-inf'), 'change': float('-inf')}
+        min_processing_times_dn = {'insert': float('inf'), 'change': float('inf')}
+        max_processing_time_dn_keys = {'insert': None, 'change': None}
+        min_processing_time_dn_keys = {'insert': None, 'change': None}
+        # Iterate through the entries
+        for entry in check_dn_details:
+            # Check if 'requests' key exists and is a list
+            if isinstance(entry.get('requests'), list):
+                for request in entry['requests']:
+                    # Access 'processing_time' directly from 'request'
+                    processing_time = request.get('processing_time')
+
+                    if processing_time is not None:
+                        request_type = request.get('request_type')
+
+                        # Check for maximum processing time
+                        if processing_time > max_processing_times_dn.get(request_type, float('-inf')):
+                            max_processing_times_dn[request_type] = processing_time
+                            max_processing_time_dn_keys[request_type] = request.get('key')
+
+                        # Check for minimum processing time
+                        if processing_time < min_processing_times_dn.get(request_type, float('inf')):
+                            min_processing_times_dn[request_type] = processing_time
+                            min_processing_time_dn_keys[request_type] = request.get('key')
+
+        
+
         check_vector_details = json.loads(check_vector_details_json)
+
+        max_processing_times_vec = {'insert': float('-inf'), 'change': float('-inf')}
+        min_processing_times_vec = {'insert': float('inf'), 'change': float('inf')}
+        max_processing_time_vec_keys = {'insert': None, 'change': None}
+        min_processing_time_vec_keys = {'insert': None, 'change': None}
+        # Iterate through the entries
+        for entry in check_vector_details:
+            # Check if 'requests' key exists and is a list
+            if isinstance(entry.get('requests'), list):
+                for request in entry['requests']:
+                    # Access 'processing_time' directly from 'request'
+                    processing_time = request.get('processing_time')
+
+                    if processing_time is not None:
+                        request_type = request.get('request_type')
+
+                        # Check for maximum processing time
+                        if processing_time > max_processing_times_vec.get(request_type, float('-inf')):
+                            max_processing_times_vec[request_type] = processing_time
+                            max_processing_time_vec_keys[request_type] = request.get('key')
+
+                        # Check for minimum processing time
+                        if processing_time < min_processing_times_vec.get(request_type, float('inf')):
+                            min_processing_times_vec[request_type] = processing_time
+                            min_processing_time_vec_keys[request_type] = request.get('key')
 
 
         # Extract unique vector_ids from vector_stats and count occurrences
@@ -108,28 +161,30 @@ class SEPage(BasePage):
         dn_edited_count = 0
 
         for dn_detail in check_dn_details:
-            request_type = dn_detail.get('request', {}).get('request_type', '').lower()
-            if request_type == 'insert':
-                dn_added_count += 1
-            elif request_type == 'change':
-                dn_edited_count += 1
+            
+            # Check if 'requests' key exists and is a list
+            if 'requests' in dn_detail and isinstance(dn_detail['requests'], list):
+                for request in dn_detail['requests']:
+                    
+                    request_type = request.get('request_type', '').lower()
+                    
+                    if request_type == 'insert':
+                        dn_added_count += 1
+                    elif request_type == 'change':
+                        dn_edited_count += 1
+
 
         # Count the number of Vectors added and edited
         vector_added_count = 0
         vector_edited_count = 0
 
         for vector_detail in check_vector_details:
-            # print("vector_detail:", vector_detail)  # Add this line
-            print("##" * 100)
             
             # Check if 'requests' key exists and is a list
             if 'requests' in vector_detail and isinstance(vector_detail['requests'], list):
                 for request in vector_detail['requests']:
-                    print("request:", request)  # Add this line
-                    print("0" * 100)
                     
                     request_type = request.get('request_type', '').lower()
-                    print("request_type:", request_type)  # Add this line
                     
                     if request_type == 'insert':
                         vector_added_count += 1
@@ -139,6 +194,47 @@ class SEPage(BasePage):
                 print("Invalid or missing 'requests' key in vector_detail")
 
         summary_report = {
+            "max_processing_vec": {
+                "insert": {
+                    "vec_id": max_processing_time_vec_keys['insert'] if max_processing_time_vec_keys['insert'] is not None else 'N/A',
+                    "total_execution_time": max_processing_times_vec['insert'] if max_processing_time_vec_keys['insert'] is not None else 'N/A'
+                },
+                "change": {
+                    "vec_id": max_processing_time_vec_keys['change'] if max_processing_time_vec_keys['change'] is not None else 'N/A',
+                    "total_execution_time": max_processing_times_vec['change'] if max_processing_time_vec_keys['change'] is not None else 'N/A'
+                }
+            },
+            "min_processing_vec": {
+                "insert": {
+                    "vec_id": min_processing_time_vec_keys['insert'] if min_processing_time_vec_keys['insert'] is not None else 'N/A',
+                    "total_execution_time": min_processing_times_vec['insert'] if min_processing_time_vec_keys['insert'] is not None else 'N/A'
+                },
+                "change": {
+                    "vec_id": min_processing_time_vec_keys['change'] if min_processing_time_vec_keys['change'] is not None else 'N/A',
+                    "total_execution_time": min_processing_times_vec['change'] if min_processing_time_vec_keys['change'] is not None else 'N/A'
+                }
+            },
+            "max_processing_dn": {
+                "insert": {
+                    "dn_id": max_processing_time_dn_keys['insert'] if max_processing_time_dn_keys['insert'] is not None else 'N/A',
+                    "total_execution_time": max_processing_times_dn['insert'] if max_processing_time_dn_keys['insert'] is not None else 'N/A'
+                },
+                "change": {
+                    "dn_id": max_processing_time_dn_keys['change'] if max_processing_time_dn_keys['change'] is not None else 'N/A',
+                    "total_execution_time": max_processing_times_dn['change'] if max_processing_time_dn_keys['change'] is not None else 'N/A'
+                }
+            },
+            "min_processing_dn": {
+                "insert": {
+                    "dn_id": min_processing_time_dn_keys['insert'] if min_processing_time_dn_keys['insert'] is not None else 'N/A',
+                    "total_execution_time": min_processing_times_dn['insert'] if min_processing_time_dn_keys['insert'] is not None else 'N/A'
+                },
+                "change": {
+                    "dn_id": min_processing_time_dn_keys['change'] if min_processing_time_dn_keys['change'] is not None else 'N/A',
+                    "total_execution_time": min_processing_times_dn['change'] if min_processing_time_dn_keys['change'] is not None else 'N/A'
+                }
+            },
+            
             "total_ixns": total_calls,
             "total_vectors": total_vectors,
             "max_processing_vector": {
@@ -257,7 +353,7 @@ class SEPage(BasePage):
 
         # Convert the result to JSON-formatted string
         result_json = json.dumps(result_list, default=str)
-        print(f"final step: {result_json}")
+        # print(f"final step: {result_json}")
         return result_json
 
 
@@ -273,6 +369,7 @@ class SEPage(BasePage):
         for log in logs:
             # Extract keys from the first set of logs
             match = re.search(r'\[ Received routing-entity-(\w+) event with id: (\w+) tenant: (\w+) entity: callType key: (\d+) event time: (\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d+Z) \]~~', log)
+          
             if match:
                 key = int(match.group(4))
                 request_type = match.group(1)
@@ -288,12 +385,12 @@ class SEPage(BasePage):
                     "event_time": datetime.strptime(event_time, '%Y-%m-%dT%H:%M:%S.%fZ'),
                 }
 
-                key_map[key] = {
-                    "request": None,
-                    "sync_logs": [],
-                }
-
+                key_map.setdefault(key, {"request": None, "requests": []})
+                key_map[key]["requests"].append(current_key_info)
                 key_map[key]["request"] = current_key_info
+        
+
+                # print("entry: ",key_map[key]["request"])
 
             # Process payload logs
             payload_matches = re.finditer(r'Payload:(.*?)]~~', log)
@@ -307,35 +404,66 @@ class SEPage(BasePage):
 
                     if key_from_payload in key_map and entity_type_from_payload == key_map[key_from_payload]["request"]["entity"]:
                         key_map[key_from_payload]["request"]["payload_details"] = payload_details
-
+                    # print("entry2: ",key_map[key]["request"])
                 except json.JSONDecodeError as e:
                     print(f"Error decoding JSON: {e}")
 
-            # # Look for synchronization logs
-            # sync_match = re.search(r'DN synchronized, DN:\d+\|(\d+\.\d+\.\d+)', log)
-            # if sync_match and current_key_info:
-            #     sync_id = sync_match.group(1)
-            #     log_timestamp_match = re.search(r'^(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2},\d{3})', log)
-            #     if log_timestamp_match:
-            #         log_timestamp = log_timestamp_match.group(1)
-            #         sync_time = datetime.strptime(log_timestamp, '%Y-%m-%d %H:%M:%S,%f')
-            #         entity_id = int(sync_id.split('.')[-1])
-            #         print("entity id:",entity_id )
-            #         print("key map: ",  key_map["request"]["payload_details"]["data"]["id"])
-            #         print("#"*100)
-            #         # Check if the sync log is associated with the current Received routing-entity event
-            #         if entity_id == key_map["request"]["payload_details"]["data"]["id"]:
-            #             key_map[key_from_payload]["sync_logs"].append({
-            #                 "sync_id": sync_id,
-            #                 "sync_time": sync_time,
-            #             })
+            # Look for synchronization logs
+            sync_match = re.search(r'(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2},\d{3}).*DN synchronized, DN:\d+\|(\d+\.\d+\.\d+), Entity:dn', log)
+
+            if sync_match:
+                log_timestamp = sync_match.group(1)
+                sync_id = sync_match.group(2)
+
+                sync_time = datetime.strptime(log_timestamp, '%Y-%m-%d %H:%M:%S,%f')
+                entity_id = int(sync_id.split('.')[-1])
+                for key in key_map:
+                    try:
+                        if key_map[key]["request"]["payload_details"]["data"]["id"] == entity_id:
+                            for request in key_map[key]["requests"]:
+                                if not request.get("sync_details"):
+                                    log_timestamp = sync_match.group(1)
+                                    sync_time = datetime.strptime(log_timestamp, '%Y-%m-%d %H:%M:%S,%f')
+
+                                    # Extract event_time from the request
+                                    event_time = request.get("event_time")
+
+                                    if event_time:
+                                        # Convert both sync_time and event_time to timestamps (floats)
+                                        sync_timestamp = sync_time.timestamp()
+                                        event_timestamp = event_time.timestamp()
+
+                                        # Calculate processing time
+                                        processing_time_seconds = sync_timestamp - event_timestamp
+
+                                        # Add processing time directly to the request
+                                        key_map[key]["request"]["processing_time"] = processing_time_seconds
+
+                                    # Add synchronization details to the correct key in key_map
+                                    sync_details = {
+                                        "entity_id": entity_id,
+                                        "sync_time": sync_time,
+                                    }
+                                    key_map[key]["request"]["sync_logs"] = sync_details
+
+                                    # Break out of the loop to move to the next key
+                                    break
+                    except json.JSONDecodeError as e:
+                        print(f"Error decoding JSON: {e}")
+
+        # Sort requests within each key based on timestamps
+        for key in key_map:
+            key_map[key]["requests"] = sorted(key_map[key]["requests"], key=lambda x: x["event_time"])
 
         # Convert key_map to a list before returning
-        result_list = [v for v in key_map.values()]
+        result_list = [{"requests": v["requests"]} for v in key_map.values()]
+
+
+        # # Convert key_map to a list before returning
+        # result_list = [v for v in key_map.values()]
 
         # Convert the result to JSON-formatted string
         result_json = json.dumps(result_list, default=str)
-        # print(f"final step: {result_json}")
         return result_json
 
 
