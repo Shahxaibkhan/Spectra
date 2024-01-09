@@ -144,6 +144,13 @@ class SFSPage(BasePage):
         # Parse the JSON data
         json_data = json.loads(logs_json)
 
+        imEvents_data = self.sfs_im_events_processing(json_data)
+
+
+         # Call the sfs_im_events_processing function to get imEvents_data
+        imEvents_data, max_processing_times, min_processing_times = self.sfs_im_events_processing(json_data)
+
+
         # Initialize summary data
         summary_data = {
             'total_ixns': 0,
@@ -187,9 +194,155 @@ class SFSPage(BasePage):
             if events_with_notify_dropout:
                 summary_data['notify_dropout_ixns'] += 1
 
+            # Extract additional details from imEvents_data
+            if ixn_id in imEvents_data:
+                for detail in imEvents_data[ixn_id]:
+                    sending_event_name = detail['sending_event']['event_name']
+                    receiving_event_name = detail['receiving_event']['event_name'] if detail['receiving_event'] else None
+                    time_difference = detail['time_difference']
+
+                    # Do something with the extracted details
+                    print(f"Ixn ID: {ixn_id}, Sending Event: {sending_event_name}, Receiving Event: {receiving_event_name}, Time Difference: {time_difference}")
+
+            print("##"*200)
+            # Print max and min processing times for each sending event
+            for event_name, max_time in max_processing_times.items():
+                print(f"Max processing time for {event_name}: {max_time}")
+                print("0="*50)
+            for event_name, min_time in min_processing_times.items():
+                print(f"Min processing time for {event_name}: {min_time}")
+                print("0="*50)
+            
+
         return summary_data
 
 
+
+    def sfs_im_events_processing(self, logs_data):
+        # Dictionary to store paired events
+        paired_events = {}
+
+        # Dictionaries to store max and min processing times for each sending event
+        max_processing_times = {}
+        min_processing_times = {}
+
+        # Iterate through logs
+        for ixn_id, ixn_data in logs_data.items():
+            events = ixn_data.get('events', [])
+            ixn_events = []  # List to store events for each ixn_id
+
+            # Iterate through sending events
+            for sending_event in events:
+                if sending_event['status'] == 'sending':
+                    sent_event = sending_event['event_name']
+                    sending_agent_id = sending_event['agent_id']
+
+                    # Find corresponding receiving event
+                    corresponding_receiving_event = self.get_corresponding_receiving_event(sent_event)
+                    if corresponding_receiving_event is not None:
+                        # Check if the corresponding receiving event is missing and timestamp order is correct
+                        receiving_event_found = False
+
+                        for receiving_event in events:
+                            if (
+                                receiving_event['status'] == 'receiving'
+                                and receiving_event['event_name'] == corresponding_receiving_event
+                                and receiving_event['agent_id'] == sending_agent_id
+                                and datetime.strptime(receiving_event['timestamp'], "%Y-%m-%d %H:%M:%S,%f") > datetime.strptime(sending_event['timestamp'], "%Y-%m-%d %H:%M:%S,%f")
+                            ):
+                                # Calculate time difference
+                                sending_time = datetime.strptime(sending_event['timestamp'], "%Y-%m-%d %H:%M:%S,%f")
+                                receiving_time = datetime.strptime(receiving_event['timestamp'], "%Y-%m-%d %H:%M:%S,%f")
+                                processing_time = receiving_time - sending_time
+
+                                # Collect details
+                                details = {
+                                    'sending_event': sending_event,
+                                    'receiving_event': receiving_event,
+                                    'processing_time': str(processing_time),
+                                }
+                                ixn_events.append(details)  # Append details to the list
+                                receiving_event_found = True
+
+                                # Collect max and min processing times
+                                time_difference_seconds = processing_time.total_seconds()
+
+                                if sent_event not in max_processing_times or time_difference_seconds > max_processing_times[sent_event]['time']:
+                                    max_processing_times[sent_event] = {'time': time_difference_seconds, 'ixn_ids': [ixn_id]}
+                                elif time_difference_seconds == max_processing_times[sent_event]['time']:
+                                    max_processing_times[sent_event]['ixn_ids'].append(ixn_id)
+
+                                if sent_event not in min_processing_times or time_difference_seconds < min_processing_times[sent_event]['time']:
+                                    min_processing_times[sent_event] = {'time': time_difference_seconds, 'ixn_ids': [ixn_id]}
+                                elif time_difference_seconds == min_processing_times[sent_event]['time']:
+                                    min_processing_times[sent_event]['ixn_ids'].append(ixn_id)
+
+                                break  # Break out of the loop once a matching receiving event is found
+
+                        if not receiving_event_found:
+                            # Corresponding receiving event is missing or timestamp order is incorrect
+                            details = {
+                                'sending_event': sending_event,
+                                'receiving_event': None,
+                                'processing_time': "Missing or Incorrect Receiving Event",
+                            }
+                            ixn_events.append(details)  # Append details to the list
+
+            paired_events[ixn_id] = ixn_events  # Store the list of events for each ixn_id
+
+        # Convert the dictionaries to lists for returning
+        max_processing_times_list = [{'event_name': event, **details} for event, details in max_processing_times.items()]
+        min_processing_times_list = [{'event_name': event, **details} for event, details in min_processing_times.items()]
+
+        # Convert the dictionary to a JSON object
+        logs_json = json.dumps(paired_events, indent=2)
+
+        # Write the JSON data to a file
+        output_file_path = "custom_output.json"
+        with open(output_file_path, 'w') as output_file:
+            output_file.write(logs_json)
+
+        # Print max and min processing times for each sending event
+        for event_data in max_processing_times_list:
+            print(f"Max processing time for {event_data['event_name']}: {event_data['time']} (IXN IDs: {event_data['ixn_ids']})")
+        for event_data in min_processing_times_list:
+            print(f"Min processing time for {event_data['event_name']}: {event_data['time']} (IXN IDs: {event_data['ixn_ids']})")
+
+        return logs_json
+    
+    def get_corresponding_receiving_event(self,sending_event):
+        # Define your mapping of sending events to corresponding receiving events here
+        # This function should return the receiving event based on the sending event
+        # For example:
+        if sending_event in ['Route', 'RouteToSkill', 'Reroute']:
+            return 'Routed'
+        elif sending_event == 'Provision':
+            return 'Provisioned'
+        elif sending_event == 'Assign':
+            return 'Assigned'
+        elif sending_event == 'Connect':
+            return 'Connected'
+        elif sending_event == 'Hold':
+            return 'Held'
+        elif sending_event == 'Resume':
+            return 'Resumed'
+        elif sending_event == 'Transfer':
+            return 'Transferred'
+        elif sending_event == 'Merge':
+            return 'Merged'
+        elif sending_event == 'Dispose':
+            return 'Disposed'
+        elif sending_event == 'Terminate':
+            return 'Terminated'
+        elif sending_event == 'Ignore_audit':
+            return 'Ignored_audit'
+        elif sending_event == 'Audit_ixn':
+            return 'Audited_ixn'
+        elif sending_event == 'Audit_channel':
+            return 'Audited_channel'
+        # Add more cases as needed
+        else:
+            return None  # If no corresponding receiving event found
 
 
     def convert_logs_to_json(self,sorted_logs):
