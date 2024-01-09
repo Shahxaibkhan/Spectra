@@ -148,7 +148,7 @@ class SFSPage(BasePage):
 
 
          # Call the sfs_im_events_processing function to get imEvents_data
-        imEvents_data, max_processing_times, min_processing_times = self.sfs_im_events_processing(json_data)
+        # imEvents_data, max_processing_times, min_processing_times = self.sfs_im_events_processing(json_data)
 
 
         # Initialize summary data
@@ -194,24 +194,24 @@ class SFSPage(BasePage):
             if events_with_notify_dropout:
                 summary_data['notify_dropout_ixns'] += 1
 
-            # Extract additional details from imEvents_data
-            if ixn_id in imEvents_data:
-                for detail in imEvents_data[ixn_id]:
-                    sending_event_name = detail['sending_event']['event_name']
-                    receiving_event_name = detail['receiving_event']['event_name'] if detail['receiving_event'] else None
-                    time_difference = detail['time_difference']
+            # # Extract additional details from imEvents_data
+            # if ixn_id in imEvents_data:
+            #     for detail in imEvents_data[ixn_id]:
+            #         sending_event_name = detail['sending_event']['event_name']
+            #         receiving_event_name = detail['receiving_event']['event_name'] if detail['receiving_event'] else None
+            #         time_difference = detail['time_difference']
 
-                    # Do something with the extracted details
-                    print(f"Ixn ID: {ixn_id}, Sending Event: {sending_event_name}, Receiving Event: {receiving_event_name}, Time Difference: {time_difference}")
+            #         # Do something with the extracted details
+            #         print(f"Ixn ID: {ixn_id}, Sending Event: {sending_event_name}, Receiving Event: {receiving_event_name}, Time Difference: {time_difference}")
 
-            print("##"*200)
-            # Print max and min processing times for each sending event
-            for event_name, max_time in max_processing_times.items():
-                print(f"Max processing time for {event_name}: {max_time}")
-                print("0="*50)
-            for event_name, min_time in min_processing_times.items():
-                print(f"Min processing time for {event_name}: {min_time}")
-                print("0="*50)
+            # print("##"*200)
+            # # Print max and min processing times for each sending event
+            # for event_name, max_time in max_processing_times.items():
+            #     print(f"Max processing time for {event_name}: {max_time}")
+            #     print("0="*50)
+            # for event_name, min_time in min_processing_times.items():
+            #     print(f"Min processing time for {event_name}: {min_time}")
+            #     print("0="*50)
             
 
         return summary_data

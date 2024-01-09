@@ -271,7 +271,7 @@ class SEPage(BasePage):
         # Process logs sequentially
         for log in logs:
             # Extract keys from the first set of logs
-            match = re.search(r'\[ Received routing-entity-(\w+) event with id: (\w+) tenant: (\w+) entity: vector key: (\d+) event time: (\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d+Z) \]~~', log)
+            match = re.search(r'\[ Received routing-entity-(\w+) event with id: re_(?:add|change)_(\w+)_vector tenant: (\w+) entity: vector key: (\d+) event time: (\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d+Z) \]~~', log)
             if match:
                 key = int(match.group(4))
                 request_type = match.group(1)
@@ -368,7 +368,7 @@ class SEPage(BasePage):
         # Process logs sequentially
         for log in logs:
             # Extract keys from the first set of logs
-            match = re.search(r'\[ Received routing-entity-(\w+) event with id: (\w+) tenant: (\w+) entity: callType key: (\d+) event time: (\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d+Z) \]~~', log)
+            match = re.search(r'\[ Received routing-entity-(\w+) event with id: re_(?:add|change)_(\w+)_callType tenant: (\w+) entity: callType key: (\d+) event time: (\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d+Z) \]~~', log)
           
             if match:
                 key = int(match.group(4))
