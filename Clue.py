@@ -16,6 +16,9 @@ def index():
 
 def process_logs(log_files, log_level):
     unified_logs = []
+
+    log_entries = []
+
     log_pattern = re.compile(r'(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2},\d{6})\s+(\d+)\s+(\S+)\s*:\s*(.*)')
 
     for log_file in log_files:
@@ -24,13 +27,18 @@ def process_logs(log_files, log_level):
                 match = log_pattern.match(line)
                 if match:
                     timestamp = datetime.strptime(match.group(1), '%Y-%m-%d %H:%M:%S,%f')
-                    level = match.group(3)
+                    thread_id = match.group(2)
+                    log_level = match.group(3)
                     message = match.group(4)
 
-                    if log_level == 'ALL' or log_level == level:
-                        unified_logs.append((timestamp, level, message))
+                    if log_level == 'ALL' or log_level == log_level:
+                        log_entries.append((timestamp, thread_id, log_level, message))
 
-    unified_logs.sort(key=lambda x: x[0])
+    log_entries.sort(key=lambda x: x[0])
+
+    for entry in log_entries:
+        unified_logs.append(f"{entry[0].strftime('%Y-%m-%d %H:%M:%S,%f')}  {entry[1]}    {entry[2]}: {entry[3]}")
+
     return unified_logs
 
 @app.route('/upload-log', methods=['POST'])
@@ -49,7 +57,7 @@ def upload_log():
     output_log = io.BytesIO()
 
     for log in unified_logs:
-        output_log.write(f"{log[0]} [{log[1]}] {log[2]}\n".encode())
+        output_log.write((log + '\n').encode())
 
     output_log.seek(0)
     return send_file(output_log, as_attachment=True, download_name='unified_logs.log')

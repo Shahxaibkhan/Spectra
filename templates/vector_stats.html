@@ -137,19 +137,19 @@
         <td>{{ summary_report.compilation_time }}</td>
       </tr>
       <tr>
-        <td>Number of Entry-Point(s) added</td>
+        <td>Number of Entry-Point(s) Added</td>
         <td>{{ summary_report.dn_added_count }}</td>
       </tr>
       <tr>
-        <td>Number of Entry-Point(s) edited</td>
+        <td>Number of Entry-Point(s) Updated</td>
         <td>{{ summary_report.dn_edited_count }}</td>
       </tr>
       <tr>
-        <td>Number of Interaction-Flow(s) added</td>
+        <td>Number of Interaction-Flow(s) Added</td>
         <td>{{ summary_report.vector_added_count }}</td>
       </tr>
       <tr>
-        <td>Number of Interaction-Flow(s) edited</td>
+        <td>Number of Interaction-Flow(s) Updated</td>
         <td>{{ summary_report.vector_edited_count }}</td>
       </tr>
     </tbody>
@@ -188,7 +188,7 @@
         <td>{{ summary_report.max_processing_dn.insert.dn_id }}</td>
       </tr>
       <tr>
-        <td>Entry Points Edit</td>
+        <td>Entry Points Update</td>
         <td>{{ summary_report.min_processing_dn.change.total_execution_time }} (ms)</td>
         <td>{{ summary_report.min_processing_dn.change.dn_id }}</td>
         <td>{{ summary_report.max_processing_dn.change.total_execution_time }} (ms)</td>
@@ -202,7 +202,7 @@
         <td>{{ summary_report.max_processing_vec.insert.vec_id }}</td>
       </tr>
       <tr>
-        <td>Interaction-Flow Edit</td>
+        <td>Interaction-Flow Update</td>
         <td>{{ summary_report.min_processing_vec.change.total_execution_time }} (ms)</td>
         <td>{{ summary_report.min_processing_vec.change.vec_id }}</td>
         <td>{{ summary_report.max_processing_vec.change.total_execution_time }} (ms)</td>
@@ -245,7 +245,7 @@
 
   <!-- Table for DN Change Details -->
   <div class="table-separator"></div>
-  <h1><u>Entery Point(s) Change Details</u></h1>
+  <h1><u>Entery Point(s) Operations Details</u></h1>
 
   <table id="dnChangeTable" class="display">
     <thead>
@@ -263,7 +263,7 @@
       {% for entry in summary_report.dn_details %}
         {% for request in entry.requests %}
           <tr>
-            <td>{{ request.request_type }}</td>
+            <td>{{ "Add" if request.request_type == "insert" else "Update" }}</td>
             <td>{{ request.key }}</td>
             <td>{{ request.payload_details.data.name }}</td>
             <td>{{ request.processing_time }}</td>
@@ -278,7 +278,7 @@
 
   <!-- Table for Vector Change Details -->
   <div class="table-separator"></div>
-  <h1><u>Interaction Flow(s) Change Details</u></h1>
+  <h1><u>Interaction Flow(s) Operations Details</u></h1>
 
   <table id="vectorChangeTable" class="display">
     <thead>
@@ -295,7 +295,7 @@
       {% for vector_group in summary_report.vector_details %}
           {% for request in vector_group.requests %}
               <tr>
-                  <td>{{ request.request_type }}</td>
+                  <td>{{ "Add" if request.request_type == "insert" else "Update" }}</td>
                   <td>{{ request.key }}</td>
                   <td>{{ request.payload_details.data.name }}</td>
                   <td>{{ request.processing_time }}</td>
