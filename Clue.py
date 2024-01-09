@@ -28,10 +28,10 @@ def process_logs(log_files, log_level):
                 if match:
                     timestamp = datetime.strptime(match.group(1), '%Y-%m-%d %H:%M:%S,%f')
                     thread_id = match.group(2)
-                    log_level = match.group(3)
+                    level = match.group(3)
                     message = match.group(4)
 
-                    if log_level == 'ALL' or log_level == log_level:
+                    if log_level == 'ALL' or log_level == level:
                         log_entries.append((timestamp, thread_id, log_level, message))
 
     log_entries.sort(key=lambda x: x[0])
