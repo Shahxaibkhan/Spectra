@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>X-S.P.E.C.T.R.A.</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: #ffffff; /* Light Greenish Background */
+      color: #274D24; /* Dark Green text */
+      text-align: center;
+      padding: 20px;
+      margin: 0;
+      opacity: 0;
+      transition: opacity 1s ease-in-out;
+    }
+
+    header {
+      padding: 20px;
+      margin-bottom: 30px;
+      border-radius: 10px;
+    }
+
+    h1 {
+      color: #274D24; /* Dark Green */
+      font-size: 48px;
+      font-weight: bold;
+      margin-bottom: 10px;
+      position: relative;
+      display: inline-block;
+    }
+
+    h2 {
+      color: #274D24; /* Dark Green */
+    }
+
+    .button-container {
+      display: flex;
+      justify-content: center;
+      margin-top: 40px;
+    }
+
+    input[type="submit"] {
+      margin: 10px;
+      padding: 18px 36px;
+      border: none;
+      border-radius: 25px;
+      background: linear-gradient(to right, #274D24,#189c18 ); /* Purple to Dark Blue */
+      color: #ffffff; /* Light Gray text */
+      font-size: 20px;
+      cursor: pointer;
+      transition: background 0.3s;
+      /* font-weight: bold; */
+    }
+
+    input[type="submit"]:hover {
+      background: linear-gradient(to right, #189c18, #274D24); /* Dark Blue to Purple */
+      border: #274D24;
+      font-weight: bolder;
+    }
+
+
+    footer {
+      background-color: #274D24; /* Light Greenish Background */
+      color: #ffffff; /* Dark Green text */
+      padding: 10px;
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      box-sizing: border-box;
+      border-top: 2px solid #189c18; /* Dark Green border */
+    }
+
+    .icon {
+      display: inline-block;
+      font-size: 24px;
+      margin-right: 10px;
+    }
+
+    /* Updated styles for form elements */
+    div {
+      margin-bottom: 15px;
+      display: flex;
+      align-items: left;
+    }
+
+    label {
+      color: #274D24;
+      flex: 1;
+      text-align: right;
+      padding-right: 10px;
+      font-weight: bold;
+    }
+
+    select,
+    input {
+      padding: 10px;
+      box-sizing: border-box;
+      margin-top: 5px;
+      width: 45%;
+      background-color: #ffffff; /* Light Greenish background */
+      color: #274D24; /* Dark Green text */
+      border: 1px solid #274D24; /* Dark Green border */
+      border-radius: 5px;
+    }
+
+    button.eye-button {
+      font-size: 16px;
+      padding: 10px;
+    }
+
+    #label {
+      padding-right: 10px;
+      width: 30%;
+      margin-bottom: 0px;
+      align-items: center;
+    }
+  </style>
+</head>
+
+<body onload="fadeIn()">
+  <header>
+    <h1>X-S.P.E.C.T.R.A.</h1>
+    <h2>( Xtended - Service Performance, Errors, Connectivity, Time, and Response Analyzer )</h2>
+  </header>
+
+  <form method="post" action="/analyze">
+    <div>
+      <div id="label">
+        <label for="labSelect">Load Lab:</label>
+      </div>
+      <select name="labSelect"> <!-- Added name attribute -->
+        <option value="YODA">YODA</option>
+        <option value="QUIGON">QUIGON</option>
+        <option value="VADER">VADER</option>
+        <option value="GRUGO">GROGU</option>
+      </select>
+    </div>
+
+    <div>
+      <div id="label">
+        <label for="LogsPath">Log Path:</label>
+      </div>
+      <input type="text" name="LogsPath" value="/var/log/mega"> <!-- Added name attribute -->
+    </div>
+
+    <div>
+      <div id="label">
+        <label for="username">Username:</label>
+      </div>
+      <input type="text" name="username" placeholder="Enter your username"> <!-- Added name attribute -->
+    </div>
+
+    <div>
+      <div id="label">
+        <label for="password">Password:</label>
+      </div>
+      <input type="password" name="password" placeholder="Enter your password"> <!-- Added name attribute -->
+    </div>
+
+    <div class="button-container">
+      <input type="submit" name="action" value="SE Logs">
+      <input type="submit" name="action" value="SFS - IM Logs">
+      <input type="submit" name="action" value="SFS - SE Logs">
+      <input type="submit" name="action" value="SFS Logs">
+      <input type="submit" name="action" value="IM Logs">
+      <input type="submit" name="action" value="MFS Logs">
+      <!-- Add other input fields as needed -->
+    </div>
+
+  </form>
+
+  <footer>
+    <span class="icon">🚀</span> Utility developed by <b>Shahzaib Khan</b>
+  </footer>
+
+  <script>
+    function fadeIn() {
+      document.body.style.opacity = 1;
+    }
+
+    function togglePassword() {
+      var passwordInput = document.getElementById("password");
+      if (passwordInput.type === "password") {
+        passwordInput.type = "text";
+      } else {
+        passwordInput.type = "password";
+      }
+    }
+  </script>
+</body>
+
+</html>

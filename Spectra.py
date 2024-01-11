@@ -367,7 +367,7 @@ def upload_se():
     if action == 'Analyze Vector Details':
         return se_page.analyze_vectors() 
     elif action == 'Display Report':
-        return se_page.generate_se_stats()
+        return se_page.generate_stats()
     # elif action == 'Run Checks':
     #     return se_page.display_checks_stats()
     
