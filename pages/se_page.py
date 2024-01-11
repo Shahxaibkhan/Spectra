@@ -8,6 +8,7 @@ import re
 from datetime import datetime
 import json
 from .base_page import BasePage
+from pages.ssh_handler import fetch_log_files
 
 class SEPage(BasePage):
 
@@ -16,7 +17,7 @@ class SEPage(BasePage):
 
 
     def analyze(self):
-        # Implement IM analysis logic here
+        # Implement SE analysis logic here
         return render_template('se.html')
 
 
@@ -34,26 +35,70 @@ class SEPage(BasePage):
             file.write(logs_json)
 
         return send_file(output_file, as_attachment=True, download_name="vector_details.json")
+
+
+    def fetch_and_analyze_se_logs(self, host, logs_path, username, password):
+        log_files_content = self.fetch_se_logs(host, logs_path, username, password)
+
+        if log_files_content:
+            # Get the current working directory
+            current_dir = os.getcwd()
+
+            # Specify the directory for saving and reading files
+            upload_dir = os.path.join(current_dir, 'se_logs_files')
+            
+            # Ensure the directory exists
+            os.makedirs(upload_dir, exist_ok=True)
+
+            # Save log files with absolute paths
+            for idx, file_content in enumerate(log_files_content):
+                log_file_path = os.path.join(upload_dir, f'se_machine_{idx}.log')
+                with open(log_file_path, 'w', encoding='utf-8') as log_file:
+                    log_file.write(file_content)
+            
+            with open(log_file_path, 'r') as log_file:
+                logfile =log_file.readlines()
+
+            # Pass the list of file paths to the analysis method
+            return self.generate_se_stats(logfile)
+        else:
+            return None
+
     
+
+        
+
+    def fetch_se_logs(self,host, logs_path, username, password):
+        logs_path = logs_path.rstrip('/')  # Remove trailing slash if present
+        logs_path = f"{logs_path}/script_executor/"  # Append "/script_executor/"
+        
+        logs = fetch_log_files(host, username, password, logs_path)
+
+        if logs is not None:
+            print("File Content:")
+            print("-" * 50)
+            return logs
+        else:
+            print("Failed to fetch logs. Check SSH connection.")
+            return None
+
     def display_checks_stats(self):
         checks_stats = self.generate_checks()
-
         # Return the generated statistics to be displayed in the HTML template
         return render_template('checks_stats.html', checks_stats=checks_stats)
 
+    def generate_stats(self):
+        log_file = self.file_upload_and_processing_logs()
+        return self.generate_se_stats(log_file)
 
-
-    def generate_se_stats(self):
+    def generate_se_stats(self,log_file):
         # Generate summary report
-        summary_report = self.generate_summary_report()
-
+        summary_report = self.generate_summary_report(log_file)
         # Return the generated summary report to be displayed in the HTML template
         return render_template('vector_stats.html', summary_report=summary_report)
+  
 
-    
-
-    def generate_summary_report(self):
-        log_file = self.file_upload_and_processing_logs()
+    def generate_summary_report(self,log_file):
         vector_stats = self.generate_vector_stats(log_file)
         check_results = self.generate_checks(log_file)
         check_dn_details_json = self.dn_details(log_file)

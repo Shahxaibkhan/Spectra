@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>SE Analysis Result</title>
+</head>
+<body>
+    <h1>SE Analysis Result</h1>
+    <ul>
+        {% for log_file in log_files %}
+            <li>{{ log_file }}</li>
+        {% endfor %}
+    </ul>
+</body>
+</html>
