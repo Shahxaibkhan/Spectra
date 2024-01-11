@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>S.P.E.C.T.R.A. - Call Statistics</title>
+  <title>S.P.E.C.T.R.A. - SFS Statistics</title>
   <!-- Include jQuery -->
   <script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
   <!-- Include DataTables CSS and JS -->
@@ -71,7 +71,7 @@
 </head>
 
 <body>
-  <h1>Summary Report</h1>
+  <h1><u>SFS Summary Report</u></h1>
 
   <table id="summaryTable" class="display">
     <thead>
@@ -105,12 +105,44 @@
         <td>IXNs with NotifyDropout Events</td>
         <td>{{ summary_data.notify_dropout_ixns }}</td>
       </tr>
+      <tr>
+        <td>SFS - IM Missing Responses </td>
+        <td>{{ summary_data.events_without_receiving }}</td>
+      </tr>
     </tbody>
   </table>
 
   <div class="table-separator"></div>
 
-  <h1>Detailed Report</h1>
+  <h1><u>SFS - IM Events Processing Summary Report</u></h1>
+  <table  id="improcessingTable" class="display">
+      <thead>
+        <tr>
+            <th>Event Name</th>
+            <th>Minimum Processing Time</th>
+            <th>IXN IDs with Minimum Time</th>
+            <th>Maximum Processing Time</th>
+            <th>IXN IDs with Maximum Time</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for event_name, min_time in summary_data.min_processing_times.items() %}
+            <tr>
+                <td>{{ event_name }}</td>
+                <td>{{ min_time.time }}</td>
+                <td>{{ min_time.ixn_ids }}</td>
+                <td>{{ summary_data.max_processing_times.get(event_name, "N/A").time }}</td>
+                <td>{{ summary_data.max_processing_times.get(event_name, "N/A").ixn_ids }}</td>
+            </tr>
+        {% endfor %}
+    </tbody>
+  </table>
+
+  
+
+  <div class="table-separator"></div>
+
+  <h1><u>Call Details</u></h1>
 
   <table id="detailedTable" class="display">
     <thead>
@@ -141,6 +173,38 @@
     </tbody>
   </table>
 
+  <div class="table-separator"></div>
+  <h1><u>SFS - IM Events Details</u></h1>
+  <table id="imEventsTable" class="display">
+      <thead>
+          <tr>
+              <th>IXN ID</th>
+              <th>SFS - IM Events</th>
+              <th>Processing Time</th>
+          </tr>
+      </thead>
+      <tbody>
+          {% for ixn_id, details_list in summary_data.imEvents_data.items() %}
+              {% for detail in details_list %}
+                  <tr>
+                      <td>{{ ixn_id }}</td>
+                      <td>{{ detail.sending_event.event_name }}</td>
+                      <td>
+                          {% if detail.processing_time != "Missing or Incorrect Receiving Event" %}
+                              {{ detail.processing_time }}
+                          {% else %}
+                              Missing
+                          {% endif %}
+                      </td>
+                  </tr>
+              {% endfor %}
+          {% endfor %}
+      </tbody>
+  </table>
+  
+
+
+
   <!-- Include DataTables for both tables -->
   <script>
     $(document).ready(function () {
@@ -148,6 +212,12 @@
       $('#summaryTable').DataTable();
       // Initialize DataTable for the detailed table
       $('#detailedTable').DataTable();
+      $('#imEventsTable').DataTable();
+      $('#improcessingTable').DataTable();
+
+      
+
+      
     });
   </script>
 </body>

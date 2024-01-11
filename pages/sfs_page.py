@@ -56,7 +56,7 @@ class SFSPage(BasePage):
         detailed_summary = self.generate_detailed_report(logs_json)
 
         # Return the generated summary report and detailed summary to be displayed in the HTML template
-        return render_template('call_stats.html', summary_data=summary_data, detailed_summary=detailed_summary)
+        return render_template('sfs_stats.html', summary_data=summary_data, detailed_summary=detailed_summary)
 
 
     def extract_sfsim_details(self):
@@ -144,11 +144,11 @@ class SFSPage(BasePage):
         # Parse the JSON data
         json_data = json.loads(logs_json)
 
-        imEvents_data = self.sfs_im_events_processing(json_data)
-
-
-         # Call the sfs_im_events_processing function to get imEvents_data
-        # imEvents_data, max_processing_times, min_processing_times = self.sfs_im_events_processing(json_data)
+        # Call the sfs_im_events_processing function to get imEvents_data
+        details_json, max_processing_times, min_processing_times, events_without_receiving = self.sfs_im_events_processing(json_data)
+        
+        # Parse the details_json string into a dictionary
+        imEvents_data = json.loads(details_json)
 
 
         # Initialize summary data
@@ -159,8 +159,14 @@ class SFSPage(BasePage):
             'so_cases': 0,
             'duplicated_events_ixns': 0,
             'notify_dropout_ixns': 0,
-            'so_encountered_ixns': set() 
+            'so_encountered_ixns': set(), 
+            'imEvents_data': imEvents_data,
+            'max_processing_times': max_processing_times,
+            'min_processing_times': min_processing_times,
+            'events_without_receiving': events_without_receiving
         }
+
+
 
         # Process each ixn in the JSON data
         for ixn_id, ixn_details in json_data.items():
@@ -194,24 +200,7 @@ class SFSPage(BasePage):
             if events_with_notify_dropout:
                 summary_data['notify_dropout_ixns'] += 1
 
-            # # Extract additional details from imEvents_data
-            # if ixn_id in imEvents_data:
-            #     for detail in imEvents_data[ixn_id]:
-            #         sending_event_name = detail['sending_event']['event_name']
-            #         receiving_event_name = detail['receiving_event']['event_name'] if detail['receiving_event'] else None
-            #         time_difference = detail['time_difference']
-
-            #         # Do something with the extracted details
-            #         print(f"Ixn ID: {ixn_id}, Sending Event: {sending_event_name}, Receiving Event: {receiving_event_name}, Time Difference: {time_difference}")
-
-            # print("##"*200)
-            # # Print max and min processing times for each sending event
-            # for event_name, max_time in max_processing_times.items():
-            #     print(f"Max processing time for {event_name}: {max_time}")
-            #     print("0="*50)
-            # for event_name, min_time in min_processing_times.items():
-            #     print(f"Min processing time for {event_name}: {min_time}")
-            #     print("0="*50)
+            
             
 
         return summary_data
@@ -225,6 +214,9 @@ class SFSPage(BasePage):
         # Dictionaries to store max and min processing times for each sending event
         max_processing_times = {}
         min_processing_times = {}
+
+        # Counter for events without receiving events
+        events_without_receiving = 0
 
         # Iterate through logs
         for ixn_id, ixn_data in logs_data.items():
@@ -288,6 +280,9 @@ class SFSPage(BasePage):
                             }
                             ixn_events.append(details)  # Append details to the list
 
+                            # Increment the counter for events without receiving events
+                            events_without_receiving += 1
+
             paired_events[ixn_id] = ixn_events  # Store the list of events for each ixn_id
 
         # Convert the dictionaries to lists for returning
@@ -295,20 +290,27 @@ class SFSPage(BasePage):
         min_processing_times_list = [{'event_name': event, **details} for event, details in min_processing_times.items()]
 
         # Convert the dictionary to a JSON object
-        logs_json = json.dumps(paired_events, indent=2)
+        details_json = json.dumps(paired_events, indent=2)
 
-        # Write the JSON data to a file
-        output_file_path = "custom_output.json"
-        with open(output_file_path, 'w') as output_file:
-            output_file.write(logs_json)
+    #    # Write the JSON data to a file
+    #     output_file_path = "custom_output.json"
+    #     with open(output_file_path, 'w') as output_file:
+    #         output_file.write(details_json)
 
-        # Print max and min processing times for each sending event
-        for event_data in max_processing_times_list:
-            print(f"Max processing time for {event_data['event_name']}: {event_data['time']} (IXN IDs: {event_data['ixn_ids']})")
-        for event_data in min_processing_times_list:
-            print(f"Min processing time for {event_data['event_name']}: {event_data['time']} (IXN IDs: {event_data['ixn_ids']})")
+        # # Print max and min processing times for each sending event
+        # print("Max processing times:")
+        # for event_data in max_processing_times_list:
+        #     print(f"  {event_data['event_name']}: {event_data['time']} (IXN IDs: {event_data['ixn_ids']})")
 
-        return logs_json
+        # print("Min processing times:")
+        # for event_data in min_processing_times_list:
+        #     print(f"  {event_data['event_name']}: {event_data['time']} (IXN IDs: {event_data['ixn_ids']})")
+            
+        # # Print the count of events without receiving events
+        # print(f"Number of events without receiving events: {events_without_receiving}")
+
+
+        return details_json, max_processing_times, min_processing_times, events_without_receiving
     
     def get_corresponding_receiving_event(self,sending_event):
         # Define your mapping of sending events to corresponding receiving events here
