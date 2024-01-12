@@ -357,9 +357,16 @@ def upload_sfsse():
     with open(output_file, 'w') as file:
         return write_sorted_sfs_se_logs(file, sorted_logs, [])
 
-@app.route('/upload-im', methods=['POST'])
+@app.route('/display_im_report', methods=['POST'])
 def upload_im():
-     return im_page.upload_im() 
+    action = request.form['action']
+    print(action)
+    if action == 'Download AMS events':
+        return im_page.upload_im() 
+    elif action == 'Display Report':
+        return im_page.generate_im_stats()
+
+        
 
 @app.route('/display_se_report', methods=['POST'])
 def upload_se():
