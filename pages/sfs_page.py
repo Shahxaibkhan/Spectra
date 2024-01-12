@@ -50,7 +50,7 @@ class SFSPage(BasePage):
         log_file = self.file_upload_and_processing_logs()
         sorted_logs = self.call_processed_logs(log_file)
         # Convert logs to JSON
-        logs_json = self.convert_sfaim_logs_to_json(sorted_logs)
+        logs_json = self.convert_sfsim_logs_to_json(sorted_logs)
 
         summary_data = self.generate_summary_report(logs_json)
         detailed_summary = self.generate_detailed_report(logs_json)
@@ -66,7 +66,7 @@ class SFSPage(BasePage):
         output_file = os.path.join(current_dir, "sfsim_details.log")
 
         # Convert logs to JSON
-        logs_json = self.convert_sfaim_logs_to_json(sorted_logs)
+        logs_json = self.convert_sfsim_logs_to_json(sorted_logs)
 
         # Save JSON to a file
         with open(output_file, 'w') as file:
@@ -389,7 +389,7 @@ class SFSPage(BasePage):
 
         return logs_json
     
-    def convert_sfaim_logs_to_json(self, sorted_logs):
+    def convert_sfsim_logs_to_json(self, sorted_logs):
         json_data = {}
 
         for log in sorted_logs:

@@ -3,8 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>S.P.E.C.T.R.A. - SFS Log Analyzer</title>
-    <title>SPECTRA</title>
+    <title>S.P.E.C.T.R.A. - IM Log Analyzer</title>
     <style>
          body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -60,15 +59,16 @@
 </head>
 <body>
     <h1>IM  Logs Analyzer</h1>
-    <form method="post" action="/upload-im" enctype="multipart/form-data">
+    <form method="post" action="/display_im_report" enctype="multipart/form-data">
        
         <label for="log_file">IM Log File:</label>
         <input type="file" name="log_file" accept=".log" required>
         <br>
-        <input type="submit" value="Analyze AMS events">
+        <input type="submit" name="action" value="Download AMS events">
+        <input type="submit" name="action" value="Display Report">
     </form>
     <footer>
-        Utility developed by Shahzaib Khan
-    </footer>
+        <span class="icon">🚀</span> Utility developed by <b>Shahzaib Khan</b>
+      </footer>
 </body>
 </html>
