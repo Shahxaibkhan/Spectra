@@ -118,6 +118,55 @@
       margin-bottom: 0px;
       align-items: center;
     }
+
+    /* Style the custom radio button when checked */
+    input[type="radio"]:checked + .custom-radio::before{
+            content: ''; 
+            width: 8px; 
+            height: 8px;
+            background-color: #fff; /* Color for checked state */
+            border-radius: 50%;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%); 
+        }
+
+        /* Adjust the label positioning */
+    .Scenario label {
+            height: 21px;
+            margin-left: 10%;
+            display: flex;
+            align-items:normal;
+            margin-right: 12px;
+            font-size: 16px;
+            color: #274D24; /* Change log level label color */
+    }
+    
+    
+    .Scenario {
+            width: 45%;
+            caret-color: transparent;
+            display: flex;
+            align-items: center;
+            justify-content: space-around;
+            margin-bottom: 0px;
+        }
+     /* Hide the default radio button */
+    .Scenario input[type="radio"] {
+              display: none;
+      }
+    .custom-radio {
+            margin-right: 5px;
+            display: inline-block;
+            width: 20px;
+            height: 19px;
+            border: 2px solid #274D24;
+            border-radius: 50%;
+            background-color: #189c18;
+            position: relative;
+            transition: background-color 0.3s, border-color 0.3s;
+        }
   </style>
 </head>
 
@@ -139,6 +188,28 @@
         <option value="GRUGO">GROGU</option>
       </select>
     </div>
+
+    <div>
+      <div id="label">
+        <label for=""></label>
+      </div>
+      <!-- New radio buttons section -->
+      <div class="Scenario">
+        <label>
+          <input type="radio" name="Scenario" value="Primary" checked>
+          <div class="custom-radio"></div> Primary
+        </label>
+        <label>
+          <input type="radio" name="Scenario" value="Secondary">
+          <div class="custom-radio"></div> Secondary
+        </label>
+        <label>
+          <input type="radio" name="Scenario" value="HA Scenario" >
+          <div class="custom-radio"></div> HA 
+        </label>
+      </div>
+    </div>
+    
 
     <div>
       <div id="label">

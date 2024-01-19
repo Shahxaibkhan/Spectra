@@ -9,9 +9,14 @@ from pages.se_page import SEPage
 from pages.sfs_page import SFSPage
 from pages.ssh_handler import fetch_log_files
 
-
+import configparser
 
 app = Flask(__name__)
+
+# Load the config file
+config = configparser.ConfigParser()
+config.read('config.ini')
+
 
 im_page = IMPage(app)
 se_page = SEPage(app)
@@ -39,15 +44,27 @@ def analyze():
     print("password", password)
     action = request.form['action']
     print(action)
-    # button_pressed = request.form.get('button')  # Assuming 'button' is the name attribute in the HTML
-    
-    if lab == 'YODA':
-        host = '172.16.19.137'
 
+    # Fetch the IPs from the config file based on the lab
+    primary_ip = config.get(lab, 'primary_ip')
+    secondary_ip = config.get(lab, 'secondary_ip')
+
+     # Check the selected radio button
+    scenario = request.form.get('Scenario')
+    print(scenario)
+    print(primary_ip)
+    # Determine which IPs to fetch based on the selected scenario
+    selected_ips = []
+    if scenario == 'Primary':
+        selected_ips.append(primary_ip)
+    elif scenario == 'Secondary':
+        selected_ips.append(secondary_ip)
+    elif scenario == 'HA Scenario':
+        selected_ips.extend([primary_ip, secondary_ip])
+
+    print(selected_ips)
     if action == 'SE Logs':
-        return se_page.fetch_and_analyze_se_logs(host,logs_path,username,password) 
-        
-   
+        return se_page.fetch_and_analyze_se_logs(selected_ips, logs_path, username, password)
 
 if __name__ == '__main__':
     app.run(debug=True, port=1000)
