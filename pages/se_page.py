@@ -7,6 +7,7 @@ import zipfile
 import re
 from datetime import datetime
 import json
+import tempfile
 from .base_page import BasePage
 from pages.ssh_handler import fetch_log_files
 
@@ -37,31 +38,38 @@ class SEPage(BasePage):
         return send_file(output_file, as_attachment=True, download_name="vector_details.json")
 
 
-    def fetch_and_analyze_se_logs(self, host, logs_path, username, password):
-        log_files_content = self.fetch_se_logs(host, logs_path, username, password)
+    def fetch_and_analyze_se_logs(self, selected_ips, logs_path, username, password):
+        all_logs_content = []  # List to store log lines from all selected IPs
 
-        if log_files_content:
-            # Get the current working directory
-            current_dir = os.getcwd()
+        # Iterate over selected IPs
+        for host in selected_ips:
+            try:
+                log_files_content = self.fetch_se_logs(host, logs_path, username, password)
 
-            # Specify the directory for saving and reading files
-            upload_dir = os.path.join(current_dir, 'se_logs_files')
-            
-            # Ensure the directory exists
-            os.makedirs(upload_dir, exist_ok=True)
+                if log_files_content:
+                    all_logs_content.extend(log_files_content)
+            except Exception as e:
+                print(f"Failed to fetch logs from {host}: {e}")
 
-            # Save log files with absolute paths
-            for idx, file_content in enumerate(log_files_content):
-                log_file_path = os.path.join(upload_dir, f'se_machine_{idx}.log')
-                with open(log_file_path, 'w', encoding='utf-8') as log_file:
-                    log_file.write(file_content)
-            
-            with open(log_file_path, 'r') as log_file:
-                logfile =log_file.readlines()
+        if all_logs_content:
+            # Create a temporary file to store all logs
+            with tempfile.NamedTemporaryFile(mode='w+', delete=False, encoding='utf-8') as temp_file:
+                try:
+                    # Write all logs to the temporary file
+                    temp_file.writelines(all_logs_content)
 
-            # Pass the list of file paths to the analysis method
-            return self.generate_se_stats(logfile)
+                    # Move the file cursor to the beginning for reading
+                    temp_file.seek(0)
+
+                    # Read the content into a list
+                    logfile = temp_file.readlines()
+
+                    # Pass the list of log lines to the analysis method
+                    return self.generate_se_stats(logfile)
+                except Exception as e:
+                    print(f"Error processing logs: {e}")
         else:
+            print("No logs fetched from any machine.")
             return None
 
     
