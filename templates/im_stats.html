@@ -71,6 +71,106 @@
 </head>
 
 <body>
+
+  <h1><u>IM Summary Report</u></h1>
+
+  <table id="summaryTable" class="display">
+    <thead>
+      <tr>
+        <th>Statistic</th>
+        <th>Value</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Total IXNs</td>
+        <td>{{ im_sfs_summary_data.total_ixns }}</td>
+      </tr>
+      <tr>
+        <td>IXNs with Duplicated Events</td>
+        <td>{{ im_sfs_summary_data.duplicated_events_ixns }}</td>
+      </tr>
+      <tr>
+        <td>SFS - IM Missing Responses </td>
+        <td>{{ im_sfs_summary_data.events_without_receiving }}</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="table-separator"></div>
+
+  <h1><u>SFS Events Processing Details</u></h1>
+  <table  id="imsfsprocessingDetailsTable" class="display">
+      <thead>
+        <tr>
+            <th>Event Name</th>
+            <th>Minimum Processing Time (ms)</th>
+            <th>IXN IDs with Minimum Time</th>
+            <th>Tenant ID with Min Time</th>
+            <th>Maximum Processing Time (ms)</th>
+            <th>IXN IDs with Maximum Time</th>
+            <th>Tenant ID with Max Time</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for event_name, min_time in im_sfs_summary_data.min_processing_times.items() %}
+            <tr>
+                <td>{{ event_name }}</td>
+                <td>{{  "{:.3f}".format(min_time.time) }}</td>
+                <td>{{ min_time.ixn_id }}</td>
+                <td>{{ min_time.tenant_id }}</td>
+                <td>{{  "{:.3f}".format(im_sfs_summary_data.max_processing_times.get(event_name, "N/A").time) }}</td>
+                <td>{{ im_sfs_summary_data.max_processing_times.get(event_name, "N/A").ixn_id }}</td>
+                <td>{{ im_sfs_summary_data.max_processing_times.get(event_name, "N/A").tenant_id }}</td>
+            </tr>
+        {% endfor %}
+    </tbody>
+  </table>
+
+  <div class="table-separator"></div>
+  <h1><u>SFS Events Details</u></h1>
+  <table id="imsfsEventsTable" class="display">
+      <thead>
+          <tr>
+              <th>IXN ID</th>
+              <th>Tenant ID</th>
+              <th>IM - SFS Events</th>
+              <th>Processing Time (ms)</th>
+              <th>Agent IDs</th>
+          </tr>
+      </thead>
+      <tbody>
+        {% for tenant_id, tenant_data in im_sfs_summary_data.sfsEvents_data.items() %}
+            {% for ixn_id, events in tenant_data.items() %}
+                {% for event in events %}
+                    <tr>
+                        <td>{{ ixn_id }}</td>
+                        <td>{{ tenant_id }}</td>
+                        <td>{{ event.receiving_event.event_name }}</td>
+                        <td>
+                            {% if event.processing_time != "Missing or Incorrect Sending Event" %}
+                                {{ event.processing_time }}
+                            {% else %}
+                                Missing
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if tenant_id in im_sfs_summary_data.agent_ids and ixn_id in im_sfs_summary_data.agent_ids[tenant_id] %}
+                                {{ im_sfs_summary_data.agent_ids[tenant_id][ixn_id] }}
+                            {% else %}
+                                N/A
+                            {% endif %}
+                        </td>
+                    </tr>
+                {% endfor %}
+            {% endfor %}
+        {% endfor %}
+    </tbody>
+  </table>
+  
+  
+  <div class="table-separator"></div>
+  
   <!-- Table for Event Occurrences -->
   <h1><u>AMS Events Occurrences</u></h1>
   <table id="eventOccurrencesTable" class="display">
@@ -93,7 +193,7 @@
   <div class="table-separator"></div>
   <!-- Table for Processing Details -->
   <h1><u>AMS Events Processing Details</u></h1>
-  <table id="processingDetailsTable" class="display">
+  <table id="imamsprocessingDetailsTable" class="display">
       <thead>
           <tr>
               <th>Event Name</th>
@@ -121,6 +221,8 @@
           {% endfor %}
       </tbody>
   </table>
+
+
   <div class="table-separator"></div>
 
   <!-- Table for Paired Events -->
@@ -168,11 +270,16 @@
   <script>
     $(document).ready(function () {
       // Initialize DataTable for the summary table
-      // $('#summaryTable').DataTable();
+      $('#summaryTable').DataTable();
       // Initialize DataTable for the detailed table
       $('#eventOccurrencesTable').DataTable();
-      $('#processingDetailsTable').DataTable();
+      $('#imamsprocessingDetailsTable').DataTable();
       $('#pairedEventsTable').DataTable();
+      $('#imsfsprocessingDetailsTable').DataTable();
+      $('#imsfsEventsTable').DataTable();
+
+      
+      
 
       
 
