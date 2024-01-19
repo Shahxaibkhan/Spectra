@@ -245,7 +245,7 @@ class SFSPage(BasePage):
                                 # Calculate time difference
                                 sending_time = datetime.strptime(sending_event['timestamp'], "%Y-%m-%d %H:%M:%S,%f")
                                 receiving_time = datetime.strptime(receiving_event['timestamp'], "%Y-%m-%d %H:%M:%S,%f")
-                                processing_time = receiving_time - sending_time
+                                processing_time = (receiving_time - sending_time).total_seconds() * 1000
 
                                 # Collect details
                                 details = {
@@ -257,7 +257,7 @@ class SFSPage(BasePage):
                                 receiving_event_found = True
 
                                 # Collect max and min processing times
-                                time_difference_seconds = processing_time.total_seconds()
+                                time_difference_seconds = processing_time
 
                                 if sent_event not in max_processing_times or time_difference_seconds > max_processing_times[sent_event]['time']:
                                     max_processing_times[sent_event] = {'time': time_difference_seconds, 'ixn_ids': [ixn_id]}
@@ -293,9 +293,9 @@ class SFSPage(BasePage):
         details_json = json.dumps(paired_events, indent=2)
 
     #    # Write the JSON data to a file
-    #     output_file_path = "custom_output.json"
-    #     with open(output_file_path, 'w') as output_file:
-    #         output_file.write(details_json)
+        output_file_path = "custom_output.json"
+        with open(output_file_path, 'w') as output_file:
+            output_file.write(details_json)
 
         # # Print max and min processing times for each sending event
         # print("Max processing times:")
@@ -336,8 +336,8 @@ class SFSPage(BasePage):
             return 'Disposed'
         elif sending_event == 'Terminate':
             return 'Terminated'
-        elif sending_event == 'Ignore_audit':
-            return 'Ignored_audit'
+        elif sending_event == 'IgnoreAudit':
+            return 'IgnoreAudit'
         elif sending_event == 'Audit_ixn':
             return 'Audited_ixn'
         elif sending_event == 'Audit_channel':
@@ -416,7 +416,16 @@ class SFSPage(BasePage):
             if duplicate_event:
                 # Mark as duplicated and add details to the duplicated_events list
                 json_data[ixn_id]['duplicated'] = True
-                json_data[ixn_id]['duplicated_events'].append(duplicate_event)
+
+                # Create a copy of the original event and add details to the duplicated_events list
+                original_event_copy = {
+                    'event_name': duplicate_event['event_name'],
+                    'timestamp': duplicate_event['timestamp'],
+                    'status': duplicate_event['status'],
+                    'agent_id': duplicate_event['agent_id'],
+                    'header': duplicate_event['header']
+                }
+                json_data[ixn_id]['duplicated_events'].append(original_event_copy)
             else:
                 # Add new event details
                 json_data[ixn_id]['events'].append({
@@ -443,13 +452,13 @@ class SFSPage(BasePage):
 
 
     def call_processed_logs(self,log_file):
-            parsed_vector_logs = [result for log in log_file if (result := self.parse_sfsim_logs(log)) is not None]
+            parsed_log_file = [result for log in log_file if (result := self.parse_sfsim_logs(log)) is not None]
             
-            if not parsed_vector_logs:
+            if not parsed_log_file:
                 # Handle the case when no logs were parsed
                 return []
 
-            sorted_logs = sorted(parsed_vector_logs, key=lambda x: (x['ixn_id'], x['tenant_id'], x['timestamp'],x['event'], x['agent_id']))
+            sorted_logs = sorted(parsed_log_file, key=lambda x: (x['ixn_id'], x['tenant_id'], x['timestamp'],x['event'], x['agent_id']))
 
             
             return sorted_logs

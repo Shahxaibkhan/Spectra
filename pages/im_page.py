@@ -27,11 +27,11 @@ class IMPage(BasePage):
     #     # Generate summary report
     #     summary_report = self.generate_summary_report(log_file)
     #     # Return the generated summary report to be displayed in the HTML template
-    #     return render_template('im_stats.html', summary_report=summary_report)
+    #     return render_template('im_stats.html', summary_report=summary_report)py sp   
 
     def upload_im(self):
         log_file = self.file_upload_and_processing_logs()
-        sorted_im_ams_logs = self.fetch_im_ams_logs(log_file)
+        sorted_im_ams_logs = self.fetch_im_ams_sorted_logs(log_file)
         current_dir = os.getcwd()
         # Specify the output file for the analysis with an absolute path
         output_file = os.path.join(current_dir, "IM_ams_flow.log")
@@ -41,20 +41,295 @@ class IMPage(BasePage):
     def generate_im_stats(self):
         # Generate summary report
         log_file = self.file_upload_and_processing_logs()
-        sorted_im_ams_logs = self.fetch_im_ams_logs(log_file)
-        # Convert logs to JSON
-        logs_json = self.convert_im_ams_logs_to_json(sorted_im_ams_logs)
-        
-
-        summary_data = self.generate_summary_report(logs_json)
-
+        summary_data = self.generate_summary_report(log_file)
         # Return the generated summary report and detailed summary to be displayed in the HTML template
         return render_template(
             'im_stats.html',
             im_ams_event_details=summary_data['im_ams_event_details'],
-            im_ams_processing_details=summary_data['im_ams_processing_details']
+            im_ams_processing_details=summary_data['im_ams_processing_details'],
+            im_sfs_summary_data=summary_data['im_sfs_summary_data']
         )
 
+    def generate_summary_report(self,logs):
+        im_ams_jsonLogs = self.fetch_im_ams_json_logs(logs)
+        im_ams_event_details = self.fetch_im_ams_event_details(im_ams_jsonLogs)
+        im_ams_processing_details = self.fetch_im_ams_processing_details(im_ams_event_details['paired_events'])
+
+        im_sfs_jsonLogs = self.fetch_im_sfs_json_logs(logs)
+    
+        
+        # Call the sfs_im_events_processing function to get imEvents_data
+        paired_events, max_processing_times, min_processing_times, events_without_receiving, im_sfs_duplicated_events_count, total_ixns, agent_ids_dict = self.fetch_im_sfs_event_and_processing_details(im_sfs_jsonLogs)
+
+        sfsEvents_data = paired_events
+        im_sfs_summary_data = {
+            'agent_ids' : agent_ids_dict,
+            'total_ixns': total_ixns,
+            'duplicated_events_ixns': im_sfs_duplicated_events_count,
+            'sfsEvents_data': sfsEvents_data,
+            'max_processing_times': max_processing_times,
+            'min_processing_times': min_processing_times,
+            'events_without_receiving': events_without_receiving,
+        }
+
+
+        summary_data = {
+        "im_sfs_summary_data": im_sfs_summary_data,
+        'im_ams_event_details': im_ams_event_details,
+        'im_ams_processing_details': im_ams_processing_details
+        }
+
+        return summary_data
+
+
+    def fetch_im_sfs_event_and_processing_details(self, im_sfs_json_logs):
+
+        im_sfs_jsonLogs = json.loads(im_sfs_json_logs)
+        
+        # Dictionary to store paired events
+        paired_events = {}
+
+        # Dictionaries to store max and min processing times for each receiving event
+        max_processing_times = {}
+        min_processing_times = {}
+
+        # Counter for events without sending events
+        events_without_sending = 0
+
+        duplicated_events_count = 0
+
+        total_ixns = 0
+
+        # Dictionary to store agent IDs
+        agent_ids_dict = {}
+
+        # Iterate through tenant ids
+        for tenant_id, tenant_data in im_sfs_jsonLogs.items():
+
+             # Initialize agent_ids_dict for the current tenant
+            agent_ids_dict.setdefault(tenant_id, {})
+            
+            # Iterate through ixn ids for each tenant
+            for ixn_id, ixn_data in tenant_data.items():
+                total_ixns += 1
+                events = ixn_data.get('events', [])
+                
+                agent_ids = ixn_data.get('agent_ids', [])
+               
+
+                # Store agent_ids for the current tenant and ixn_id
+                if ixn_id not in agent_ids_dict[tenant_id]:
+                    agent_ids_dict[tenant_id][ixn_id] = agent_ids
+
+                ixn_events =[]  # List to store events for each ixn_id
+                 # Check for duplicated events
+                if 'duplicated' in ixn_data and ixn_data['duplicated']:
+                    duplicated_events_count += 1
+                # Iterate through receiving events
+                for receiving_event in events:
+                    if receiving_event['status'] == 'receiving':
+                        received_event = receiving_event['event_name']
+                        receiving_agent_id = receiving_event['agent_id']
+
+                        # Find corresponding sending event
+                        corresponding_sending_event = self.get_corresponding_sending_event(received_event)
+                
+                        if corresponding_sending_event is not None:
+                            # Check if the corresponding sending event is missing and timestamp order is correct
+                            sending_event_found = False
+    
+                            for sending_event in events:
+                                if (
+                                        sending_event['status'] == 'sending'
+                                        and sending_event['event_name'] == corresponding_sending_event
+                                        and datetime.strptime(receiving_event['timestamp'], "%Y-%m-%d %H:%M:%S,%f") < datetime.strptime(sending_event['timestamp'], "%Y-%m-%d %H:%M:%S,%f")
+                                        and (
+                                            (sending_event['agent_id'] == receiving_agent_id and corresponding_sending_event != 'Merged')  # For events other than "Merged"
+                                            or (
+                                                corresponding_sending_event == 'Merged'  # For "Merge" event
+                                                and (
+                                                    sending_event['agent_id'] == receiving_agent_id
+                                                    or sending_event['header']['source_ixn_id'] == receiving_event['header']['source_ixn_id']
+                                                )
+                                            )
+                                            or (
+                                                corresponding_sending_event == 'Transferred'  # For "Transferred" event
+                                                and (
+                                                    sending_event['agent_id'] == receiving_agent_id
+                                                    or sending_event['header']['destination_ixn_id'] == receiving_event['header']['destination_ixn_id']
+                                                )
+                                            )
+                                        )
+                                    ):
+                                    # Calculate time difference
+                                    sending_time = datetime.strptime(sending_event['timestamp'], "%Y-%m-%d %H:%M:%S,%f")
+                                    receiving_time = datetime.strptime(receiving_event['timestamp'], "%Y-%m-%d %H:%M:%S,%f")
+                                    processing_time = (sending_time - receiving_time ).total_seconds() * 1000
+                                    
+
+                                    # Collect details
+                                    details = {
+                                        'sending_event': sending_event,
+                                        'receiving_event': receiving_event,
+                                        'processing_time': str(processing_time),
+                                    }
+                                    ixn_events.append(details)  # Append details to the list  # Append details to the list
+                                    sending_event_found = True
+
+                                    # Collect max and min processing times
+                                    time_difference_seconds = processing_time
+
+                                    if received_event not in max_processing_times or time_difference_seconds > max_processing_times[received_event]['time']:
+                                        max_processing_times[received_event] = {'time': time_difference_seconds, 'tenant_id': tenant_id, 'ixn_id': ixn_id}
+                                    elif time_difference_seconds == max_processing_times[received_event]['time']:
+                                        max_processing_times[received_event]['tenant_id'] = tenant_id
+                                        max_processing_times[received_event]['ixn_id'] = ixn_id
+
+                                    if received_event not in min_processing_times or time_difference_seconds < min_processing_times[received_event]['time']:
+                                        min_processing_times[received_event] = {'time': time_difference_seconds, 'tenant_id': tenant_id, 'ixn_id': ixn_id}
+                                    elif time_difference_seconds == min_processing_times[received_event]['time']:
+                                        min_processing_times[received_event]['tenant_id'] = tenant_id
+                                        min_processing_times[received_event]['ixn_id'] = ixn_id
+
+                                    break  # Break out of the loop once a matching sending event is found
+
+                            if not sending_event_found:
+                                # Corresponding sending event is missing or timestamp order is incorrect
+                                details = {
+                                    'receiving_event': receiving_event,
+                                    'sending_event': None,
+                                    'processing_time': "Missing or Incorrect Sending Event",
+                                }
+                                ixn_events.append(details)  # Append details to the list # Append details to the list
+                                
+                                # Increment the counter for events without sending events
+                                events_without_sending += 1
+
+                paired_events.setdefault(tenant_id, {}).setdefault(ixn_id, []).extend(ixn_events)
+
+        # # Convert the dictionaries to lists for returning
+        # max_processing_times_list = [{'event_name': event, **details} for event, details in max_processing_times.items()]
+        # min_processing_times_list = [{'event_name': event, **details} for event, details in min_processing_times.items()]
+
+
+        # Output agent IDs separately
+        # agent_ids_json = json.dumps(agent_ids_dict, indent=2)
+        # agent_ids_output_file_path = 'agentids_output.json'
+        # with open(agent_ids_output_file_path, 'w') as agent_ids_output_file:
+        #     json.dump(agent_ids_dict, agent_ids_output_file, indent=2)
+        # # Convert the dictionary to a JSON object
+        # details_json = json.dumps(paired_events, indent=2)
+
+        # output_file_path='eventdetails_output.json'
+        # # Write JSON data to output file for debugging
+        # with open(output_file_path, 'w') as output_file:
+            # json.dump(paired_events, output_file, indent=2)
+        # Return the processed data
+        return paired_events, max_processing_times, min_processing_times, events_without_sending , duplicated_events_count, total_ixns, agent_ids_dict
+
+
+    def get_corresponding_sending_event(self,receiving_event):
+        # Define your mapping of sending events to corresponding receiving events here
+        # This function should return the receiving event based on the sending event
+        # For example:
+        if receiving_event in ['Route', 'RouteToSkill', 'Reroute']:
+            return 'Routed'
+        elif receiving_event == 'Provision':
+            return 'Provisioned'
+        elif receiving_event == 'Assign':
+            return 'Assigned'
+        elif receiving_event == 'Connect':
+            return 'Connected'
+        elif receiving_event == 'Hold':
+            return 'Held'
+        elif receiving_event == 'Resume':
+            return 'Resumed'
+        elif receiving_event == 'Transfer':
+            return 'Transferred'
+        elif receiving_event == 'Merge':
+            return 'Merged'
+        elif receiving_event == 'Dispose':
+            return 'Disposed'
+        elif receiving_event == 'Terminate':
+            return 'Terminated'
+        elif receiving_event == 'IgnoreAudit':
+            return 'IgnoredAudit'
+        elif receiving_event == 'Audit_ixn':
+            return 'Audited_ixn'
+        elif receiving_event == 'Audit_channel':
+            return 'Audited_channel'
+        # Add more cases as needed
+        else:
+            return None  # If no corresponding receiving event found
+
+
+    def fetch_im_ams_json_logs(self,log_file):
+        sorted_im_ams_logs = self.fetch_im_ams_sorted_logs(log_file)
+        return self.convert_im_ams_logs_to_json(sorted_im_ams_logs)
+
+    def fetch_im_sfs_json_logs(self,log_file):
+        sorted_im_sfs_logs = self.fetch_im_sfs_sorted_logs(log_file)
+        return self.convert_im_sfs_logs_to_json(sorted_im_sfs_logs)
+
+    def convert_im_sfs_logs_to_json(self, sorted_logs):
+        json_data = {}
+
+        for log in sorted_logs:
+            ixn_id = log['ixnid']
+            tenant_id = log['tenant_id']
+            event_name = log['event_name']
+            timestamp = log['timestamp']
+            agent_id = log['agent_id']
+            status = log['status']
+            header = log['header']
+
+            # Create or update entries in the JSON data
+            json_data.setdefault(tenant_id, {})
+            json_data[tenant_id].setdefault(ixn_id, {'agent_ids': [], 'events': [], 'duplicated_events': []})
+
+            if agent_id is not None and agent_id not in json_data[tenant_id][ixn_id]['agent_ids']:
+                json_data[tenant_id][ixn_id]['agent_ids'].append(agent_id)
+
+            # Check if the event is already present (excluding timestamp)
+            duplicate_event = next(
+                (event for event in json_data[tenant_id][ixn_id]['events'] if event['event_name'] == event_name
+                and event['header'] == header and event['status'] == status and event['agent_id'] == agent_id),
+                None
+            )
+
+            if duplicate_event:
+                # Mark as duplicated
+                json_data[tenant_id][ixn_id]['duplicated'] = True
+
+                # Create a copy of the original event and add details to the duplicated_events list
+                original_event_copy = {
+                    'event_name': duplicate_event['event_name'],
+                    'timestamp': duplicate_event['timestamp'],
+                    'status': duplicate_event['status'],
+                    'agent_id': duplicate_event['agent_id'],
+                    'header': duplicate_event['header']
+                }
+
+                json_data[tenant_id][ixn_id]['duplicated_events'].append(original_event_copy)
+            else:
+                # Add new event details
+                json_data[tenant_id][ixn_id]['events'].append({
+                    'event_name': event_name,
+                    'timestamp': timestamp,
+                    'status': status,
+                    'agent_id': agent_id,
+                    'header': header
+                })
+
+        # output_file_path='debug_output.json'
+        # # # Write JSON data to output file for debugging
+        # with open(output_file_path, 'w') as output_file:
+        #     json.dump(json_data, output_file, indent=2)
+
+        # Convert the JSON data to a JSON-formatted string
+        json_string = json.dumps(json_data, indent=2)
+
+        return json_string
 
     def fetch_im_ams_event_details(self, logs_json):
         paired_events = {}
@@ -214,7 +489,7 @@ class IMPage(BasePage):
          
 
 
-    def fetch_im_ams_logs(self,log_file):
+    def fetch_im_ams_sorted_logs(self,log_file):
         parsed_log_file = [self.parse_im_ams_logs(log) for log in log_file if self.parse_im_ams_logs(log) is not None]
 
         # Check if any logs were parsed
@@ -225,6 +500,34 @@ class IMPage(BasePage):
         sorted_logs = sorted(parsed_log_file, key=lambda x: (x['ixnid'], x['event_name'], x['agent_id'] if x['agent_id'] is not None else 0, x['tenant_id'], x['timestamp']))
 
         return sorted_logs
+
+    def fetch_im_sfs_sorted_logs(self, log_file):
+        parsed_log_file = [result for log in log_file if (result := self.parse_im_sfs_logs(log)) is not None]
+
+        # Check if any logs were parsed
+        if not parsed_log_file:
+            # Handle the case when no logs were parsed
+            return []
+
+        sorted_logs = sorted(parsed_log_file, key=lambda x: (
+            
+            x['tenant_id'],
+            x['ixnid'],
+            x['event_name'],
+            x['timestamp'],
+            x['agent_id']
+        ))
+
+
+        # output_file_path='debug_output.log'
+        # with open(output_file_path, 'w') as output_file:
+        #      output_file.write(str(sorted_logs))
+
+        
+
+
+        return sorted_logs
+
 
 
     def fetch_im_ams_processing_details(self, paired_events):
@@ -272,23 +575,12 @@ class IMPage(BasePage):
             ) if details['event_count'] > 0 else 0
 
         # Debugging print statements
-        print("Processing Details:")
-        print(json.dumps(processing_details, indent=2))
+        # print("Processing Details:")
+        # print(json.dumps(processing_details, indent=2))
 
         return processing_details
 
 
-
-    def generate_summary_report(self,logs):
-        im_ams_event_details = self.fetch_im_ams_event_details(logs)
-        im_ams_processing_details = self.fetch_im_ams_processing_details(im_ams_event_details['paired_events'])
-
-        summary_data = {
-        'im_ams_event_details': im_ams_event_details,
-        'im_ams_processing_details': im_ams_processing_details
-        }
-
-        return summary_data
 
     def file_upload_and_processing_logs(self):
         log_file = request.files['log_file']
@@ -354,6 +646,49 @@ class IMPage(BasePage):
 
 
         return None
+
+
+    def parse_im_sfs_logs(self, log):
+        match = re.search(r'(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2},\d+) +\d+ +DEBUG: \[ {tenant:(\d+), ixn:(\d+)(?:, (agent|extrunk): *(\d+))?} \[im\.flow\] (<-|->) client: (.+?)\]~~', log)
+
+        if match:
+            timestamp = match.group(1)
+            tenant_id = match.group(2)
+            ixn_id = match.group(3)
+            agent_id = match.group(5) if match.group(5) else None
+            arrow_direction = match.group(6)
+            status = 'sending' if arrow_direction == '->' else 'receiving'
+
+            # Check if there is a match for group(6)
+            client_data = match.group(7) if len(match.groups()) >= 6 else None
+
+            # Use a regular expression to capture content inside parentheses and event name
+            client_match = re.search(r'(\w+) \((.*?)\)', client_data)
+
+            if client_match:
+                client_event_name = client_match.group(1)
+                headers = client_match.group(2)
+                # Extract key-value pairs from the header string by splitting only the first colon
+                header_pairs = [pair.strip().split(':', 1) for pair in headers.split(',') if pair.strip() and not pair.strip().startswith('header:')]
+                header_obj = dict((key.strip(), value.strip()) for key, value in header_pairs)
+
+
+               
+                output = {
+                    'timestamp': timestamp,
+                    'tenant_id': tenant_id,
+                    'ixnid': ixn_id,
+                    'agent_id': agent_id,
+                    'arrow_direction': arrow_direction,
+                    'event_name': client_event_name,
+                    'status' : status,
+                    'header': header_obj,
+                }
+                return output
+
+        return None
+
+
 
     def write_IM_sorted_logs(self,file, sorted_logs, all_logs):
         prev_log = None  # To keep track of the previous log in the loop
