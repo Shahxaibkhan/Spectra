@@ -1,13 +1,13 @@
 # im_page.py
 
-from flask import Flask, render_template, request, send_file
-import io
-import os
-import zipfile
-import re
+import io, os, zipfile, re
+import json, tempfile
 from datetime import datetime
 from .base_page import BasePage
-import json
+from pages.ssh_handler import fetch_log_files
+from flask import Flask, render_template, request, send_file
+
+
 
 class IMPage(BasePage):
 
@@ -38,9 +38,62 @@ class IMPage(BasePage):
         with open(output_file, 'w') as file:
             return self.write_IM_sorted_logs(file, sorted_im_ams_logs, [])
 
-    def generate_im_stats(self):
-        # Generate summary report
+    
+    def generate_stats(self):
         log_file = self.file_upload_and_processing_logs()
+        return self.generate_im_stats(log_file)
+
+    def fetch_and_analyze_im_logs(self, selected_ips, logs_path, username, password):
+        all_logs_content = []  # List to store log lines from all selected IPs
+
+        # Iterate over selected IPs
+        for host in selected_ips:
+            try:
+                log_files_content = self.fetch_im_logs(host, logs_path, username, password)
+
+                if log_files_content:
+                    all_logs_content.extend(log_files_content)
+            except Exception as e:
+                print(f"Failed to fetch logs from {host}: {e}")
+
+        if all_logs_content:
+            # Create a temporary file to store all logs
+            with tempfile.NamedTemporaryFile(mode='w+', delete=False, encoding='utf-8') as temp_file:
+                try:
+                    # Write all logs to the temporary file
+                    temp_file.writelines(all_logs_content)
+
+                    # Move the file cursor to the beginning for reading
+                    temp_file.seek(0)
+
+                    # Read the content into a list
+                    logfile = temp_file.readlines()
+
+                    # Pass the list of log lines to the analysis method
+                    return self.generate_im_stats(logfile)
+                except Exception as e:
+                    print(f"Error processing logs: {e}")
+        else:
+            print("No logs fetched from any machine.")
+            return None
+
+    def fetch_im_logs(self,host, logs_path, username, password):
+        logs_path = logs_path.rstrip('/')  # Remove trailing slash if present
+        logs_path = f"{logs_path}/interaction-manager-service/"  # Append "/script_executor/"
+        
+        logs = fetch_log_files(host, username, password, logs_path)
+
+        if logs is not None:
+            print("Logs Found")
+            print("-" * 50)
+            return logs
+        else:
+            print("Failed to fetch logs. Check SSH connection.")
+            return None
+
+    
+    def generate_im_stats(self,log_file):
+        # Generate summary report
         summary_data = self.generate_summary_report(log_file)
         # Return the generated summary report and detailed summary to be displayed in the HTML template
         return render_template(

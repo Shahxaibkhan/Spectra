@@ -24,7 +24,7 @@
     }
 
     h1 {
-      color: #4B0082; /* Dark Green */
+      color: hsla(11,100%,52.2%,1); /* Dark Green */
       font-size: 48px;
       font-weight: bold;
       margin-bottom: 10px;
@@ -39,7 +39,6 @@
     .button-container {
       display: flex;
       justify-content: center;
-      margin-top: 40px;
     }
 
     input[type="submit"] {
@@ -56,7 +55,7 @@
     }
 
     input[type="submit"]:hover {
-      background: linear-gradient(to right, #8556a7, #4B0082); /* Dark Blue to Purple */
+      background: linear-gradient(to right, #8556a7, hsla(11,100%,52.2%,1),#8556a7); /* Dark Blue to Purple */
       border: #4B0082;
       font-weight: bolder;
     }
@@ -71,7 +70,7 @@
       left: 0;
       width: 100%;
       box-sizing: border-box;
-      border-top: 2px solid #FFF; /* Dark Green border */
+      border-top: 2px solid hsla(11,100%,52.2%,1); /* Dark Green border */
     }
 
     .icon {
@@ -88,7 +87,7 @@
     }
 
     label {
-      color: #4B0082;
+      color: hsla(11,100%,52.2%,1);
       flex: 1;
       text-align: right;
       padding-right: 10px;
@@ -103,8 +102,9 @@
       width: 45%;
       background-color: #ffffff; /* Light Greenish background */
       color: #4B0082; /* Dark Green text */
-      border: 1px solid #4B0082; /* Dark Green border */
+      border: 1px solid hsla(11,100%,52.2%,1); /* Dark Green border */
       border-radius: 5px;
+      font-weight: bold;
     }
 
     button.eye-button {
@@ -131,7 +131,10 @@
             left: 50%;
             transform: translate(-50%, -50%); 
         }
-
+    
+    #service_heading{
+      color:hsla(11,100%,52.2%,1);
+    }
         /* Adjust the label positioning */
     .Scenario label {
             height: 21px;
@@ -161,13 +164,25 @@
             display: inline-block;
             width: 20px;
             height: 19px;
-            border: 2px solid #4B0082;
+            border: 2px solid hsla(11,100%,52.2%,1);
             border-radius: 50%;
             background-color: #FFF;
             position: relative;
             transition: background-color 0.3s, border-color 0.3s;
         }
   </style>
+  <script>
+    function validateForm() {
+      var username = document.forms["analyzeForm"]["username"].value;
+      var password = document.forms["analyzeForm"]["password"].value;
+  
+      if (username === "" || password === "") {
+        alert("Username and password are required");
+        return false;
+      }
+      return true;
+    }
+  </script>
 </head>
 
 <body onload="fadeIn()">
@@ -176,7 +191,7 @@
     <h2>( Xtended - Service Performance, Errors, Connectivity, Time, and Response Analyzer )</h2>
   </header>
 
-  <form method="post" action="/analyze">
+  <form method="post" action="/analyze" name="analyzeForm" onsubmit="return validateForm()" target="_blank">
     <div>
       <div id="label">
         <label for="labSelect">Load Lab:</label>
@@ -232,14 +247,20 @@
       <input type="password" name="password" placeholder="Enter your password"> <!-- Added name attribute -->
     </div>
 
+    <h2 id="service_heading"><u>Intra-Service Analysis: </u></h2>
     <div class="button-container">
-      <input type="submit" name="action" value="SE Logs">
-      <input type="submit" name="action" value="SFS - IM Logs">
-      <input type="submit" name="action" value="SFS - SE Logs">
-      <input type="submit" name="action" value="SFS Logs">
-      <input type="submit" name="action" value="IM Logs">
-      <input type="submit" name="action" value="MFS Logs">
-      <!-- Add other input fields as needed -->
+        <input type="submit" name="action" value="SE">
+        <input type="submit" name="action" value="SFS">
+        <input type="submit" name="action" value="IM">
+        <input type="submit" name="action" value="MFS ">
+        <!-- Add other input fields as needed -->
+    </div>
+
+    <h2 id="service_heading"><u>Inter-Service Analysis:</u></h2>
+    <div class="button-container">
+        <input type="submit" name="action" value="SFS - IM">
+        <input type="submit" name="action" value="SFS - SE">
+        <!-- Add other input fields as needed -->
     </div>
 
   </form>
