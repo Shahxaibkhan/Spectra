@@ -21,7 +21,7 @@ class SSHHandler:
     def execute_command(self, command, universal_newlines=False):
         if self.ssh is not None:
             stdin, stdout, stderr = self.ssh.exec_command(command)
-            return stdout.read().decode('utf-8')
+            return stdout.read().decode('utf-8', errors='replace')
         else:
             print("SSH connection not established.")
             return None
@@ -45,6 +45,8 @@ def fetch_log_files(host, username, password, log_path):
             file_path = f"{log_path}/{file_name}"
             command = f"cat {file_path}"  # Use 'cat' or an appropriate command for your file content retrieval
             file_content = ssh_handler.execute_command(command, universal_newlines=True)
+
+            # Append the decoded content to the list
             log_files_content.append(file_content)
 
         ssh_handler.close()

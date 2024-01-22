@@ -364,7 +364,7 @@ def upload_im():
     if action == 'Download AMS events':
         return im_page.upload_im() 
     elif action == 'Display Report':
-        return im_page.generate_im_stats()
+        return im_page.generate_stats()
 
         
 

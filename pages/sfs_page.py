@@ -96,7 +96,7 @@ class SFSPage(BasePage):
 
     def generate_stats(self):
         log_file = self.file_upload_and_processing_logs()
-        return generate_sfs_stats(log_file)
+        return self.generate_sfs_stats(log_file)
 
     def generate_sfs_stats(self,log_file):
         # Generate summary report
