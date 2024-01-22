@@ -66,7 +66,7 @@ def analyze():
     if action == 'SE Logs':
         return se_page.fetch_and_analyze_se_logs(selected_ips, logs_path, username, password)
     if action == 'SFS Logs':
-        return sfs_page.fetch_and_analyze_se_logs(selected_ips, logs_path, username, password)
+        return sfs_page.fetch_and_analyze_sfs_logs(selected_ips, logs_path, username, password)
 
 if __name__ == '__main__':
     app.run(debug=True, port=1000)

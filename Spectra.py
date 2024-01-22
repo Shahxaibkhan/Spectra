@@ -387,7 +387,7 @@ def upload_sfs():
     elif action == 'Call Event Details':
         return sfs_page.extract_sfsim_details()
     elif action == 'Summary report':
-        return sfs_page.generate_sfs_stats()
+        return sfs_page.generate_stats()
     # elif action == 'Run Checks':
     #     return se_page.display_checks_stats()
      

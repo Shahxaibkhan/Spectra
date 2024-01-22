@@ -36,6 +36,9 @@ def fetch_log_files(host, username, password, log_path):
     if ssh_handler.connect():
         command = f"cd {log_path} && ls *.log"
         log_file_names = ssh_handler.execute_command(command, universal_newlines=True).split('\n')[:-1]  # Exclude the last empty string
+        print("File Names: ",log_file_names)
+        print("path: ",log_path)
+
         log_files_content = []
 
         for file_name in sorted(log_file_names):
