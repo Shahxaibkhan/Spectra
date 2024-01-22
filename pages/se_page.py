@@ -83,7 +83,7 @@ class SEPage(BasePage):
         logs = fetch_log_files(host, username, password, logs_path)
 
         if logs is not None:
-            print("File Content:")
+            print("Logs Found:")
             print("-" * 50)
             return logs
         else:

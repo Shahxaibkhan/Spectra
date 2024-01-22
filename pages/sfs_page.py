@@ -7,7 +7,9 @@ import zipfile
 import re
 from datetime import datetime
 import json
+import tempfile
 from .base_page import BasePage
+from pages.ssh_handler import fetch_log_files
 
 class SFSPage(BasePage):
 
@@ -44,10 +46,60 @@ class SFSPage(BasePage):
         return render_template('checks_stats.html', checks_stats=checks_stats)
 
 
+    def fetch_and_analyze_sfs_logs(self, selected_ips, logs_path, username, password):
+        all_logs_content = []  # List to store log lines from all selected IPs
 
-    def generate_sfs_stats(self):
-        # Generate summary report
+        # Iterate over selected IPs
+        for host in selected_ips:
+            try:
+                log_files_content = self.fetch_sfs_logs(host, logs_path, username, password)
+
+                if log_files_content:
+                    all_logs_content.extend(log_files_content)
+            except Exception as e:
+                print(f"Failed to fetch logs from {host}: {e}")
+
+        if all_logs_content:
+            # Create a temporary file to store all logs
+            with tempfile.NamedTemporaryFile(mode='w+', delete=False, encoding='utf-8') as temp_file:
+                try:
+                    # Write all logs to the temporary file
+                    temp_file.writelines(all_logs_content)
+
+                    # Move the file cursor to the beginning for reading
+                    temp_file.seek(0)
+
+                    # Read the content into a list
+                    logfile = temp_file.readlines()
+
+                    # Pass the list of log lines to the analysis method
+                    return self.generate_sfs_stats(logfile)
+                except Exception as e:
+                    print(f"Error processing logs: {e}")
+        else:
+            print("No logs fetched from any machine.")
+            return None
+
+    def fetch_sfs_logs(self,host, logs_path, username, password):
+        logs_path = logs_path.rstrip('/')  # Remove trailing slash if present
+        logs_path = f"{logs_path}/SFS/"  # Append "/script_executor/"
+        
+        logs = fetch_log_files(host, username, password, logs_path)
+
+        if logs is not None:
+            print("Logs Found")
+            print("-" * 50)
+            return logs
+        else:
+            print("Failed to fetch logs. Check SSH connection.")
+            return None
+
+    def generate_stats(self):
         log_file = self.file_upload_and_processing_logs()
+        return generate_sfs_stats(log_file)
+
+    def generate_sfs_stats(self,log_file):
+        # Generate summary report
         sorted_logs = self.call_processed_logs(log_file)
         # Convert logs to JSON
         logs_json = self.convert_sfsim_logs_to_json(sorted_logs)
