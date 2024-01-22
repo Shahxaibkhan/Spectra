@@ -110,21 +110,23 @@ class IMPage(BasePage):
 
         im_sfs_jsonLogs = self.fetch_im_sfs_json_logs(logs)
     
-        
+
         # Call the sfs_im_events_processing function to get imEvents_data
-        paired_events, max_processing_times, min_processing_times, events_without_receiving, im_sfs_duplicated_events_count, total_ixns, agent_ids_dict = self.fetch_im_sfs_event_and_processing_details(im_sfs_jsonLogs)
+        result_data = self.fetch_im_sfs_event_and_processing_details(im_sfs_jsonLogs)
 
-        sfsEvents_data = paired_events
         im_sfs_summary_data = {
-            'agent_ids' : agent_ids_dict,
-            'total_ixns': total_ixns,
-            'duplicated_events_ixns': im_sfs_duplicated_events_count,
-            'sfsEvents_data': sfsEvents_data,
-            'max_processing_times': max_processing_times,
-            'min_processing_times': min_processing_times,
-            'events_without_receiving': events_without_receiving,
+            'agent_ids': result_data['agent_ids_dict'],
+            'trunk_ids': result_data['trunk_ids_dict'],
+            'supervisor_ids': result_data['supervisor_ids_dict'],
+            'total_ixns': result_data['total_ixns'],
+            'duplicated_events_ixns': result_data['duplicated_events_count'],
+            'sfsEvents_data': result_data['paired_events'],
+            'max_processing_times': result_data['max_processing_times'],
+            'min_processing_times': result_data['min_processing_times'],
+            'events_without_receiving': result_data['events_without_sending'],
         }
-
+        
+        
 
         summary_data = {
         "im_sfs_summary_data": im_sfs_summary_data,
@@ -155,24 +157,42 @@ class IMPage(BasePage):
 
         # Dictionary to store agent IDs
         agent_ids_dict = {}
+        trunk_ids_dict = {}
+        supervisor_ids_dict = {}
 
         # Iterate through tenant ids
         for tenant_id, tenant_data in im_sfs_jsonLogs.items():
 
-             # Initialize agent_ids_dict for the current tenant
+            # Initialize agent_ids_dict for the current tenant
             agent_ids_dict.setdefault(tenant_id, {})
+
+            # Initialize trunk_ids_dict for the current tenant
+            trunk_ids_dict.setdefault(tenant_id, {})
+
+            # Initialize supervisor_ids_dict for the current tenant
+            supervisor_ids_dict.setdefault(tenant_id, {})
             
             # Iterate through ixn ids for each tenant
             for ixn_id, ixn_data in tenant_data.items():
                 total_ixns += 1
                 events = ixn_data.get('events', [])
                 
-                agent_ids = ixn_data.get('agent_ids', [])
+                agent_ids = ixn_data.get('agent_ids')
+                supervisor_ids = ixn_data.get('supervisor_ids')
+                trunk_extensions = ixn_data.get('trunk_extensions')
                
 
-                # Store agent_ids for the current tenant and ixn_id
-                if ixn_id not in agent_ids_dict[tenant_id]:
-                    agent_ids_dict[tenant_id][ixn_id] = agent_ids
+                # Store agent_ids for the current tenant and ixn_id if available
+                if agent_ids is not None:
+                    agent_ids_dict[tenant_id].setdefault(ixn_id, []).extend(agent_ids)
+
+                # Store trunk_extensions for the current tenant and ixn_id if available
+                if trunk_extensions is not None:
+                    trunk_ids_dict[tenant_id].setdefault(ixn_id, []).extend(trunk_extensions)
+
+                # Store supervisor_ids for the current tenant and ixn_id if available
+                if supervisor_ids is not None:
+                    supervisor_ids_dict[tenant_id].setdefault(ixn_id, []).extend(supervisor_ids)
 
                 ixn_events =[]  # List to store events for each ixn_id
                  # Check for duplicated events
@@ -278,7 +298,21 @@ class IMPage(BasePage):
         # with open(output_file_path, 'w') as output_file:
             # json.dump(paired_events, output_file, indent=2)
         # Return the processed data
-        return paired_events, max_processing_times, min_processing_times, events_without_sending , duplicated_events_count, total_ixns, agent_ids_dict
+        # Create a dictionary to store the result
+        result_dict = {
+            'paired_events': paired_events,
+            'max_processing_times': max_processing_times,
+            'min_processing_times': min_processing_times,
+            'events_without_sending': events_without_sending,
+            'duplicated_events_count': duplicated_events_count,
+            'total_ixns': total_ixns,
+            'agent_ids_dict': agent_ids_dict,
+            'trunk_ids_dict': trunk_ids_dict,
+            'supervisor_ids_dict': supervisor_ids_dict
+        }
+
+        # Return the dictionary
+        return result_dict
 
 
     def get_corresponding_sending_event(self,receiving_event):
@@ -333,15 +367,21 @@ class IMPage(BasePage):
             event_name = log['event_name']
             timestamp = log['timestamp']
             agent_id = log['agent_id']
+            trunk_extension = log['trunk_extension']
+            supervisor_id = log['supervisor_id']
             status = log['status']
             header = log['header']
 
             # Create or update entries in the JSON data
             json_data.setdefault(tenant_id, {})
-            json_data[tenant_id].setdefault(ixn_id, {'agent_ids': [], 'events': [], 'duplicated_events': []})
-
+            json_data[tenant_id].setdefault(ixn_id, {'supervisor_ids': [], 'trunk_extensions': [], 'agent_ids': [], 'events': [], 'duplicated_events': []})
+            
             if agent_id is not None and agent_id not in json_data[tenant_id][ixn_id]['agent_ids']:
                 json_data[tenant_id][ixn_id]['agent_ids'].append(agent_id)
+            if trunk_extension is not None and trunk_extension not in json_data[tenant_id][ixn_id]['trunk_extensions']:
+                json_data[tenant_id][ixn_id]['trunk_extensions'].append(trunk_extension)
+            if supervisor_id is not None and supervisor_id not in json_data[tenant_id][ixn_id]['supervisor_ids']:
+                json_data[tenant_id][ixn_id]['supervisor_ids'].append(supervisor_id)
 
             # Check if the event is already present (excluding timestamp)
             duplicate_event = next(
@@ -568,7 +608,10 @@ class IMPage(BasePage):
             x['ixnid'],
             x['event_name'],
             x['timestamp'],
-            x['agent_id']
+            x['agent_id'],
+            x['trunk_extension'],
+            x['supervisor_id']
+
         ))
 
 
@@ -702,13 +745,30 @@ class IMPage(BasePage):
 
 
     def parse_im_sfs_logs(self, log):
-        match = re.search(r'(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2},\d+) +\d+ +DEBUG: \[ {tenant:(\d+), ixn:(\d+)(?:, (agent|extrunk): *(\d+))?} \[im\.flow\] (<-|->) client: (.+?)\]~~', log)
+        match = re.search(r'(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2},\d+) +\d+ +DEBUG: \[ {tenant:(\d+), ixn:(\d+)(?:, (agent|extrunk|supervisor): *(\d+))?} \[im\.flow\] (<-|->) client: (.+?)\]~~', log)
 
         if match:
             timestamp = match.group(1)
             tenant_id = match.group(2)
             ixn_id = match.group(3)
-            agent_id = match.group(5) if match.group(5) else None
+            agent_type = match.group(4)
+            if agent_type == 'agent':
+                agent_id = match.group(5) if match.group(5) else None
+                trunk_extension = None
+                supervisor_id = None
+            elif agent_type == 'extrunk':
+                trunk_extension = match.group(5) if match.group(5) else None
+                agent_id = None
+                supervisor_id = None
+            elif agent_type == 'supervisor':
+                supervisor_id = match.group(5) if match.group(5) else None
+                agent_id = None
+                trunk_extension = None
+            else:
+                supervisor_id = None
+                agent_id = None
+                trunk_extension = None
+                
             arrow_direction = match.group(6)
             status = 'sending' if arrow_direction == '->' else 'receiving'
 
@@ -731,7 +791,10 @@ class IMPage(BasePage):
                     'timestamp': timestamp,
                     'tenant_id': tenant_id,
                     'ixnid': ixn_id,
+                    'agent_type':agent_type,
                     'agent_id': agent_id,
+                    'trunk_extension': trunk_extension,
+                    'supervisor_id': supervisor_id,
                     'arrow_direction': arrow_direction,
                     'event_name': client_event_name,
                     'status' : status,
