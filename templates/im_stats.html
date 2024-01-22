@@ -137,6 +137,8 @@
               <th>IM - SFS Events</th>
               <th>Processing Time (ms)</th>
               <th>Agent IDs</th>
+              <th>Trunk Ext.</th>
+              <th>Supervisor ID</th>
           </tr>
       </thead>
       <tbody>
@@ -161,6 +163,20 @@
                                 N/A
                             {% endif %}
                         </td>
+                        <td>
+                          {% if tenant_id in im_sfs_summary_data.trunk_ids and ixn_id in im_sfs_summary_data.trunk_ids[tenant_id] %}
+                              {{ im_sfs_summary_data.trunk_ids[tenant_id][ixn_id] }}
+                          {% else %}
+                              N/A
+                          {% endif %}
+                      </td>
+                      <td>
+                        {% if tenant_id in im_sfs_summary_data.supervisor_ids and ixn_id in im_sfs_summary_data.supervisor_ids[tenant_id] %}
+                            {{ im_sfs_summary_data.supervisor_ids[tenant_id][ixn_id] }}
+                        {% else %}
+                            N/A
+                        {% endif %}
+                      </td>
                     </tr>
                 {% endfor %}
             {% endfor %}
