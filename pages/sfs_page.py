@@ -131,59 +131,63 @@ class SFSPage(BasePage):
         # Parse the JSON data
         json_data = json.loads(logs_json)
         # Initialize detailed report data
+        # Initialize the detailed_report list
         detailed_report = []
 
-        # Process each ixn in the JSON data
-        for ixn_id, ixn_details in json_data.items():
-            tenant_id = ixn_details.get('tenant_id', '')
-            agent_ids = ixn_details.get('agent_ids', [])
-            no_of_agents = len(agent_ids)
+        # Iterate over each tenant in the JSON data
+        for tenant_id, tenant_data in json_data.items():
 
-            # Check for duplicated events
-            duplicate_events = ixn_details.get('duplicated_events', [])
-            duplicate_events_count = len(duplicate_events)
+            # Iterate over each ixn in the tenant_data
+            for ixn_id, ixn_details in tenant_data.items():
+                agent_ids = ixn_details.get('agent_ids', [])
+                no_of_agents = len(agent_ids)
 
-            notify_dropout = any(event.get('event_name') == 'NotifyDropout' for event in ixn_details.get('events', []))
-            transfer_scenario = ixn_details.get('TransferScenerio', False)
-            conference_scenarios = [event for event in ixn_details.get('events', []) if event.get('event_name') == 'Merge']
+                # Check for duplicated events
+                duplicate_events = ixn_details.get('duplicated_events', [])
+                duplicate_events_count = len(duplicate_events)
 
-            # Initialize transfer_details and conference_details as empty dictionaries
-            transfer_details = {}
-            conference_details = {}
+                notify_dropout = any(event.get('event_name') == 'NotifyDropout' for event in ixn_details.get('events', []))
+                transfer_scenario = ixn_details.get('TransferScenerio', False)
+                conference_scenarios = [event for event in ixn_details.get('events', []) if event.get('event_name') == 'Merge']
 
-            so_supervisors = set()
-            for event in ixn_details.get('events', []):
-                supervisor_id = event.get('header', {}).get('supervisor_id', '')
-                if supervisor_id and supervisor_id != '0':
-                    so_supervisors.add(supervisor_id)
+                # Initialize transfer_details and conference_details as empty dictionaries
+                transfer_details = {}
+                conference_details = {}
 
-            if transfer_scenario:
-                transfer_event = next((event for event in ixn_details.get('events', []) if event.get('event_name') == 'Transfer'), None)
-                if transfer_event:
-                    transfer_details['destination_ixn_id'] = transfer_event.get('header', {}).get('destination_ixn_id', '')
-                    transfer_details['transferror'] = transfer_event.get('header', {}).get('transferror', '')
+                so_supervisors = set()
+                for event in ixn_details.get('events', []):
+                    supervisor_id = event.get('header', {}).get('supervisor_id', '')
+                    if supervisor_id and supervisor_id != '0':
+                        so_supervisors.add(supervisor_id)
 
-            if conference_scenarios:
-                merge_event = conference_scenarios[0]  # Assuming there's only one Merge event in the list
-                conference_details['source_ixn_id'] = merge_event.get('header', {}).get('source_ixn_id', '')
-                conference_details['excepted_party'] = merge_event.get('header', {}).get('excepted_party', '')
+                if transfer_scenario:
+                    transfer_event = next((event for event in ixn_details.get('events', []) if event.get('event_name') == 'Transfer'), None)
+                    if transfer_event:
+                        transfer_details['destination_ixn_id'] = transfer_event.get('header', {}).get('destination_ixn_id', '')
+                        transfer_details['transferror'] = transfer_event.get('header', {}).get('transferror', '')
 
-            # Create a dictionary with the extracted information
-            detailed_item = {
-                'ixn_id': ixn_id,
-                'tenant_id': tenant_id,
-                'no_of_agents': no_of_agents,
-                'duplicate_events': duplicate_events_count,
-                'notify_dropout': notify_dropout,
-                'transfer_details': transfer_details if transfer_scenario else '',
-                'conference_details': conference_details if conference_scenarios else ''
-            }
+                if conference_scenarios:
+                    merge_event = conference_scenarios[0]  # Assuming there's only one Merge event in the list
+                    conference_details['source_ixn_id'] = merge_event.get('header', {}).get('source_ixn_id', '')
+                    conference_details['excepted_party'] = merge_event.get('header', {}).get('excepted_party', '')
 
-            if so_supervisors:
-                detailed_item['so_supervisors'] = ', '.join(so_supervisors)
+                # Create a dictionary with the extracted information
+                detailed_item = {
+                    'ixn_id': ixn_id,
+                    'tenant_id': tenant_id,
+                    'no_of_agents': no_of_agents,
+                    'duplicate_events': duplicate_events_count,
+                    'notify_dropout': notify_dropout,
+                    'transfer_details': transfer_details if transfer_scenario else '',
+                    'conference_details': conference_details if conference_scenarios else ''
+                }
 
-            # Append the dictionary to the detailed report list
-            detailed_report.append(detailed_item)
+                if so_supervisors:
+                    detailed_item['so_supervisors'] = ', '.join(so_supervisors)
+
+                # Append the dictionary to the detailed_report list
+                detailed_report.append(detailed_item)
+
 
         return detailed_report
 
@@ -197,10 +201,10 @@ class SFSPage(BasePage):
         json_data = json.loads(logs_json)
 
         # Call the sfs_im_events_processing function to get imEvents_data
-        details_json, max_processing_times, min_processing_times, events_without_receiving = self.sfs_im_events_processing(json_data)
+        result_data = self.sfs_im_events_processing(json_data)
         
         # Parse the details_json string into a dictionary
-        imEvents_data = json.loads(details_json)
+        imEvents_data = json.loads(result_data['details_json'])
 
 
         # Initialize summary data
@@ -213,44 +217,47 @@ class SFSPage(BasePage):
             'notify_dropout_ixns': 0,
             'so_encountered_ixns': set(), 
             'imEvents_data': imEvents_data,
-            'max_processing_times': max_processing_times,
-            'min_processing_times': min_processing_times,
-            'events_without_receiving': events_without_receiving
+            'agent_ids': result_data['agent_ids_dict'],
+            'trunk_ids': result_data['trunk_ids_dict'],
+            'supervisor_ids': result_data['supervisor_ids_dict'],
+            'max_processing_times': result_data['max_processing_times'],
+            'min_processing_times': result_data['min_processing_times'],
+            'events_without_receiving': result_data['events_without_receiving']
         }
 
 
-
+        for tenant_id, tenant_data in json_data.items():
         # Process each ixn in the JSON data
-        for ixn_id, ixn_details in json_data.items():
-            summary_data['total_ixns'] += 1
+            for ixn_id, ixn_details in tenant_data.items():
+                summary_data['total_ixns'] += 1
 
-            # Check for TransferScenerio
-            if 'TransferScenerio' in ixn_details and ixn_details['TransferScenerio']:
-                summary_data['transfer_scenarios'] += 1
+                # Check for TransferScenerio
+                if 'TransferScenerio' in ixn_details and ixn_details['TransferScenerio']:
+                    summary_data['transfer_scenarios'] += 1
 
-            # Check for conference cases (Merge event)
-            events = ixn_details.get('events', [])  # Ensure 'events' is a list
-            for event in events:
-                event_name = event.get('event_name', '')
-                if event_name == 'Merge':
-                    summary_data['conference_cases'] += 1
+                # Check for conference cases (Merge event)
+                events = ixn_details.get('events', [])  # Ensure 'events' is a list
+                for event in events:
+                    event_name = event.get('event_name', '')
+                    if event_name == 'Merge':
+                        summary_data['conference_cases'] += 1
 
-                 # Check for SO cases (supervisor_id other than zero)
-                header = event.get('header', {})
-                supervisor_id = header.get('supervisor_id', '')
-                if supervisor_id and supervisor_id != '0' and ixn_id not in summary_data['so_encountered_ixns']:
-                    summary_data['so_cases'] += 1
-                    summary_data['so_encountered_ixns'].add(ixn_id)
+                    # Check for SO cases (supervisor_id other than zero)
+                    header = event.get('header', {})
+                    supervisor_id = header.get('supervisor_id', '')
+                    if supervisor_id and supervisor_id != '0' and ixn_id not in summary_data['so_encountered_ixns']:
+                        summary_data['so_cases'] += 1
+                        summary_data['so_encountered_ixns'].add(ixn_id)
 
 
-            # Check for duplicated events
-            if 'duplicated' in ixn_details and ixn_details['duplicated']:
-                summary_data['duplicated_events_ixns'] += 1
+                # Check for duplicated events
+                if 'duplicated' in ixn_details and ixn_details['duplicated']:
+                    summary_data['duplicated_events_ixns'] += 1
 
-            # Check for NotifyDropout events
-            events_with_notify_dropout = [event for event in events if event.get('event_name') == 'NotifyDropout']
-            if events_with_notify_dropout:
-                summary_data['notify_dropout_ixns'] += 1
+                # Check for NotifyDropout events
+                events_with_notify_dropout = [event for event in events if event.get('event_name') == 'NotifyDropout']
+                if events_with_notify_dropout:
+                    summary_data['notify_dropout_ixns'] += 1
 
             
             
@@ -270,72 +277,110 @@ class SFSPage(BasePage):
         # Counter for events without receiving events
         events_without_receiving = 0
 
-        # Iterate through logs
-        for ixn_id, ixn_data in logs_data.items():
-            events = ixn_data.get('events', [])
-            ixn_events = []  # List to store events for each ixn_id
+        # Dictionary to store agent IDs
+        agent_ids_dict = {}
+        trunk_ids_dict = {}
+        supervisor_ids_dict = {}
 
-            # Iterate through sending events
-            for sending_event in events:
-                if sending_event['status'] == 'sending':
-                    sent_event = sending_event['event_name']
-                    sending_agent_id = sending_event['agent_id']
+         # Iterate through tenant ids
+        for tenant_id, tenant_data in logs_data.items():
 
-                    # Find corresponding receiving event
-                    corresponding_receiving_event = self.get_corresponding_receiving_event(sent_event)
-                    if corresponding_receiving_event is not None:
-                        # Check if the corresponding receiving event is missing and timestamp order is correct
-                        receiving_event_found = False
+            # Initialize agent_ids_dict for the current tenant
+            agent_ids_dict.setdefault(tenant_id, {})
 
-                        for receiving_event in events:
-                            if (
-                                receiving_event['status'] == 'receiving'
-                                and receiving_event['event_name'] == corresponding_receiving_event
-                                and receiving_event['agent_id'] == sending_agent_id
-                                and datetime.strptime(receiving_event['timestamp'], "%Y-%m-%d %H:%M:%S,%f") > datetime.strptime(sending_event['timestamp'], "%Y-%m-%d %H:%M:%S,%f")
-                            ):
-                                # Calculate time difference
-                                sending_time = datetime.strptime(sending_event['timestamp'], "%Y-%m-%d %H:%M:%S,%f")
-                                receiving_time = datetime.strptime(receiving_event['timestamp'], "%Y-%m-%d %H:%M:%S,%f")
-                                processing_time = (receiving_time - sending_time).total_seconds() * 1000
+            # Initialize trunk_ids_dict for the current tenant
+            trunk_ids_dict.setdefault(tenant_id, {})
 
-                                # Collect details
+            # Initialize supervisor_ids_dict for the current tenant
+            supervisor_ids_dict.setdefault(tenant_id, {})
+
+            # Iterate through logs
+            for ixn_id, ixn_data in tenant_data.items():
+                events = ixn_data.get('events', [])
+                agent_ids = ixn_data.get('agent_ids')
+                supervisor_ids = ixn_data.get('supervisor_ids')
+                trunk_extensions = ixn_data.get('trunk_extensions')
+               
+
+                # Store agent_ids for the current tenant and ixn_id if available
+                if agent_ids is not None:
+                    agent_ids_dict[tenant_id].setdefault(ixn_id, []).extend(agent_ids)
+
+                # Store trunk_extensions for the current tenant and ixn_id if available
+                if trunk_extensions is not None:
+                    trunk_ids_dict[tenant_id].setdefault(ixn_id, []).extend(trunk_extensions)
+
+                # Store supervisor_ids for the current tenant and ixn_id if available
+                if supervisor_ids is not None:
+                    supervisor_ids_dict[tenant_id].setdefault(ixn_id, []).extend(supervisor_ids)
+
+
+                ixn_events = []  # List to store events for each ixn_id
+
+                # Iterate through sending events
+                for sending_event in events:
+                    if sending_event['status'] == 'sending':
+                        sent_event = sending_event['event_name']
+                        sending_agent_id = sending_event['agent_id']
+
+                        # Find corresponding receiving event
+                        corresponding_receiving_event = self.get_corresponding_receiving_event(sent_event)
+                        if corresponding_receiving_event is not None:
+                            # Check if the corresponding receiving event is missing and timestamp order is correct
+                            receiving_event_found = False
+
+                            for receiving_event in events:
+                                if (
+                                    receiving_event['status'] == 'receiving'
+                                    and receiving_event['event_name'] == corresponding_receiving_event
+                                    and receiving_event['agent_id'] == sending_agent_id
+                                    and datetime.strptime(receiving_event['timestamp'], "%Y-%m-%d %H:%M:%S,%f") > datetime.strptime(sending_event['timestamp'], "%Y-%m-%d %H:%M:%S,%f")
+                                ):
+                                    # Calculate time difference
+                                    sending_time = datetime.strptime(sending_event['timestamp'], "%Y-%m-%d %H:%M:%S,%f")
+                                    receiving_time = datetime.strptime(receiving_event['timestamp'], "%Y-%m-%d %H:%M:%S,%f")
+                                    processing_time = (receiving_time - sending_time).total_seconds() * 1000
+
+                                    # Collect details
+                                    details = {
+                                        'sending_event': sending_event,
+                                        'receiving_event': receiving_event,
+                                        'processing_time': str(processing_time),
+                                    }
+                                    ixn_events.append(details)  # Append details to the list
+                                    receiving_event_found = True
+
+                                    # Collect max and min processing times
+                                    time_difference_seconds = processing_time
+
+                                    if sent_event not in max_processing_times or time_difference_seconds > max_processing_times[sent_event]['time']:
+                                        max_processing_times[sent_event] = {'time': time_difference_seconds, 'ixn_ids': [ixn_id]}
+                                    elif time_difference_seconds == max_processing_times[sent_event]['time']:
+                                        max_processing_times[sent_event]['tenant_id'] = tenant_id
+                                        max_processing_times[sent_event]['ixn_id'] = ixn_id
+
+                                    if sent_event not in min_processing_times or time_difference_seconds < min_processing_times[sent_event]['time']:
+                                        min_processing_times[sent_event] = {'time': time_difference_seconds, 'ixn_ids': [ixn_id]}
+                                    elif time_difference_seconds == min_processing_times[sent_event]['time']:
+                                        min_processing_times[sent_event]['tenant_id'] = tenant_id
+                                        min_processing_times[sent_event]['ixn_id'] = ixn_id
+
+
+                                    break  # Break out of the loop once a matching receiving event is found
+
+                            if not receiving_event_found:
+                                # Corresponding receiving event is missing or timestamp order is incorrect
                                 details = {
                                     'sending_event': sending_event,
-                                    'receiving_event': receiving_event,
-                                    'processing_time': str(processing_time),
+                                    'receiving_event': None,
+                                    'processing_time': "Missing or Incorrect Receiving Event",
                                 }
                                 ixn_events.append(details)  # Append details to the list
-                                receiving_event_found = True
 
-                                # Collect max and min processing times
-                                time_difference_seconds = processing_time
+                                # Increment the counter for events without receiving events
+                                events_without_receiving += 1
 
-                                if sent_event not in max_processing_times or time_difference_seconds > max_processing_times[sent_event]['time']:
-                                    max_processing_times[sent_event] = {'time': time_difference_seconds, 'ixn_ids': [ixn_id]}
-                                elif time_difference_seconds == max_processing_times[sent_event]['time']:
-                                    max_processing_times[sent_event]['ixn_ids'].append(ixn_id)
-
-                                if sent_event not in min_processing_times or time_difference_seconds < min_processing_times[sent_event]['time']:
-                                    min_processing_times[sent_event] = {'time': time_difference_seconds, 'ixn_ids': [ixn_id]}
-                                elif time_difference_seconds == min_processing_times[sent_event]['time']:
-                                    min_processing_times[sent_event]['ixn_ids'].append(ixn_id)
-
-                                break  # Break out of the loop once a matching receiving event is found
-
-                        if not receiving_event_found:
-                            # Corresponding receiving event is missing or timestamp order is incorrect
-                            details = {
-                                'sending_event': sending_event,
-                                'receiving_event': None,
-                                'processing_time': "Missing or Incorrect Receiving Event",
-                            }
-                            ixn_events.append(details)  # Append details to the list
-
-                            # Increment the counter for events without receiving events
-                            events_without_receiving += 1
-
-            paired_events[ixn_id] = ixn_events  # Store the list of events for each ixn_id
+                paired_events.setdefault(tenant_id, {}).setdefault(ixn_id, []).extend(ixn_events)
 
         # Convert the dictionaries to lists for returning
         max_processing_times_list = [{'event_name': event, **details} for event, details in max_processing_times.items()]
@@ -345,9 +390,9 @@ class SFSPage(BasePage):
         details_json = json.dumps(paired_events, indent=2)
 
     #    # Write the JSON data to a file
-        output_file_path = "custom_output.json"
-        with open(output_file_path, 'w') as output_file:
-            output_file.write(details_json)
+        # output_file_path = "custom_output.json"
+        # with open(output_file_path, 'w') as output_file:
+        #     json.dump(paired_events, output_file, indent=2)
 
         # # Print max and min processing times for each sending event
         # print("Max processing times:")
@@ -361,8 +406,16 @@ class SFSPage(BasePage):
         # # Print the count of events without receiving events
         # print(f"Number of events without receiving events: {events_without_receiving}")
 
-
-        return details_json, max_processing_times, min_processing_times, events_without_receiving
+        result_dict = {
+            'details_json': details_json,
+            'max_processing_times': max_processing_times,
+            'min_processing_times': min_processing_times,
+            'events_without_receiving': events_without_receiving,
+            'agent_ids_dict': agent_ids_dict,
+            'trunk_ids_dict': trunk_ids_dict,
+            'supervisor_ids_dict': supervisor_ids_dict
+        }
+        return result_dict
     
     def get_corresponding_receiving_event(self,sending_event):
         # Define your mapping of sending events to corresponding receiving events here
@@ -450,24 +503,32 @@ class SFSPage(BasePage):
             event_name = log['event']
             timestamp = log['timestamp']
             agent_id = log['agent_id']
+            trunk_extension = log['trunk_extension']
+            supervisor_id = log['supervisor_id']
             status = log['status']
             header = log['header']
 
             # Create or update entries in the JSON data
-            json_data.setdefault(ixn_id, {'tenant_id': tenant_id, 'agent_ids': [], 'events': [], 'duplicated_events': []})
-            if agent_id is not None and agent_id not in json_data[ixn_id]['agent_ids']:
-                json_data[ixn_id]['agent_ids'].append(agent_id)
+            json_data.setdefault(tenant_id, {})
+            json_data[tenant_id].setdefault(ixn_id, {'supervisor_ids': [], 'trunk_extensions': [], 'agent_ids': [], 'events': [], 'duplicated_events': []})
+            
+            if agent_id is not None and agent_id not in json_data[tenant_id][ixn_id]['agent_ids']:
+                json_data[tenant_id][ixn_id]['agent_ids'].append(agent_id)
+            if trunk_extension is not None and trunk_extension not in json_data[tenant_id][ixn_id]['trunk_extensions']:
+                json_data[tenant_id][ixn_id]['trunk_extensions'].append(trunk_extension)
+            if supervisor_id is not None and supervisor_id not in json_data[tenant_id][ixn_id]['supervisor_ids']:
+                json_data[tenant_id][ixn_id]['supervisor_ids'].append(supervisor_id)
 
             # Check if the event is already present (excluding timestamp)
             duplicate_event = next(
-                (event for event in json_data[ixn_id]['events'] if event['event_name'] == event_name
-                 and event['header'] == header and event['status'] == status and event['agent_id'] == agent_id),
+                (event for event in json_data[tenant_id][ixn_id]['events'] if event['event_name'] == event_name
+                and event['header'] == header and event['status'] == status and event['agent_id'] == agent_id),
                 None
             )
 
             if duplicate_event:
-                # Mark as duplicated and add details to the duplicated_events list
-                json_data[ixn_id]['duplicated'] = True
+                # Mark as duplicated
+                json_data[tenant_id][ixn_id]['duplicated'] = True
 
                 # Create a copy of the original event and add details to the duplicated_events list
                 original_event_copy = {
@@ -477,10 +538,11 @@ class SFSPage(BasePage):
                     'agent_id': duplicate_event['agent_id'],
                     'header': duplicate_event['header']
                 }
-                json_data[ixn_id]['duplicated_events'].append(original_event_copy)
+
+                json_data[tenant_id][ixn_id]['duplicated_events'].append(original_event_copy)
             else:
                 # Add new event details
-                json_data[ixn_id]['events'].append({
+                json_data[tenant_id][ixn_id]['events'].append({
                     'event_name': event_name,
                     'timestamp': timestamp,
                     'status': status,
@@ -495,7 +557,12 @@ class SFSPage(BasePage):
                     'destination_ixn_id': header.get('destination_ixn_id', ''),
                     'transferror': header.get('transferror', '')
                 }
-                json_data[ixn_id].update(transfer_details)
+                json_data[tenant_id][ixn_id].update(transfer_details)
+
+        # output_file_path='debug_output.json'
+        # # # Write JSON data to output file for debugging
+        # with open(output_file_path, 'w') as output_file:
+        #     json.dump(json_data, output_file, indent=2)
 
         # Convert the JSON data to a JSON-formatted string
         json_string = json.dumps(json_data, indent=2)
@@ -510,7 +577,7 @@ class SFSPage(BasePage):
                 # Handle the case when no logs were parsed
                 return []
 
-            sorted_logs = sorted(parsed_log_file, key=lambda x: (x['ixn_id'], x['tenant_id'], x['timestamp'],x['event'], x['agent_id']))
+            sorted_logs = sorted(parsed_log_file, key=lambda x: (x['ixn_id'], x['tenant_id'], x['timestamp'],x['event'], x['agent_id'],x['trunk_extension'],x['supervisor_id']))
 
             
             return sorted_logs
@@ -576,7 +643,8 @@ class SFSPage(BasePage):
     def parse_sfsim_logs(self, log):
         result = {}
 
-        pattern = re.compile(r'(?P<timestamp>\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2},\d{6})\s+(?P<log_level>\d+)\s+DEBUG:\s+\[\s+{tenant:(?P<tenant_id>\d+),\s+ixn:(?P<ixn_id>\d+)(?:,\s+agent:(?P<agent_id>\d+))?.*?\]\s+(?P<arrow><-|->)\s+im:\s+(?P<event>\w+)\s+\(header:(?P<header>[^~]+)\)\s.*?~~')
+        pattern = re.compile(r'(?P<timestamp>\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2},\d{6})\s+(?P<log_level>\d+)\s+DEBUG:\s+\[\s+{tenant:(?P<tenant_id>\d+),\s+ixn:(?P<ixn_id>\d+)(?:,\s+(?P<agent_type>agent|extrunk|supervisor): *(?P<agent_value>\d+))?.*?\]\s+(?P<arrow><-|->)\s+im:\s+(?P<event>\w+)\s+\(header:(?P<header>[^~]+)\)\s.*?~~')
+        # pattern = re.compile(r'(?P<timestamp>\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2},\d{6})\s+(?P<log_level>\d+)\s+DEBUG:\s+\[\s+{tenant:(?P<tenant_id>\d+),\s+ixn:(?P<ixn_id>\d+),\s+(?P<agent_type>agent|extrunk|supervisor): *(?P<agent_value>\d+)(?:,\s+.*?)*?\]\s+(?P<arrow><-|->)\s+im:\s+(?P<event>\w+)\s+\(header:(?P<header>[^~]+)\)\s.*?~~')
 
         match = re.search(pattern, log)
 
@@ -584,11 +652,29 @@ class SFSPage(BasePage):
             timestamp = match.group('timestamp')
             tenant_id = match.group('tenant_id')
             ixn_id = match.group('ixn_id')
-            agent_id = match.group('agent_id')
+            agent_type = match.group('agent_type')
+            agent_value = match.group('agent_value')
             log_level = match.group('log_level')
             status = 'sending' if match.group('arrow') == '->' else 'receiving'
             event = match.group('event')
             header_str = match.group('header')
+
+            if agent_type == 'agent':
+                agent_id = agent_value
+                trunk_extension = None
+                supervisor_id = None
+            elif agent_type == 'extrunk':
+                trunk_extension = agent_value
+                agent_id = None
+                supervisor_id = None
+            elif agent_type == 'supervisor':
+                supervisor_id = agent_value
+                agent_id = None
+                trunk_extension = None
+            else:
+                supervisor_id = None
+                agent_id = None
+                trunk_extension = None
 
             # Extract key-value pairs from the header string by splitting only the first colon
             header_pairs = [pair.strip().split(':', 1) for pair in header_str.split(',') if pair.strip()]
@@ -596,6 +682,8 @@ class SFSPage(BasePage):
 
             result['timestamp'] = timestamp
             result['tenant_id'] = tenant_id
+            result['supervisor_id'] = supervisor_id
+            result['trunk_extension'] = trunk_extension
             result['ixn_id'] = ixn_id
             result['agent_id'] = agent_id
             result['log_level'] = log_level
