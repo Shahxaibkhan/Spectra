@@ -152,6 +152,10 @@
         <td>Number of Interaction-Flow(s) Updated</td>
         <td>{{ summary_report.vector_edited_count }}</td>
       </tr>
+      <tr>
+        <td>Number of Tenant(s) Added</td>
+        <td>{{ summary_report.tenant_add_details.total_tenants_added }}</td>
+      </tr>
     </tbody>
   </table>
 
@@ -210,6 +214,31 @@
       </tr>
     </tbody>
   </table>
+
+  <div class="table-separator"></div>
+
+
+  <h1><u>Tenant Add Details</u></h1>
+
+  <table id="tenantAddTable" class="display">
+    <thead>
+      <tr>
+        <th data-sort="int">Tenant ID</th>
+        <th data-sort="string">Tenant Name</th>
+        <th data-sort="float">Processing Time (ms)</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for tenant_id, tenant_detail in summary_report.tenant_add_details.tenant_details.items() %}
+      <tr>
+        <td>{{ tenant_id }}</td>
+        <td>{{ tenant_detail.tenant_name }}</td>
+        <td>{{ tenant_detail.processing_time if tenant_detail.processing_time else "Missing" }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
 
   <div class="table-separator"></div>
 
@@ -322,6 +351,9 @@
       $('#dnChangeTable').DataTable();
       $('#vectorChangeTable').DataTable();
       $('#processingTable').DataTable();
+      $('#tenantAddTable').DataTable();
+
+      
 
       // Extract vector_id_counts from summary_report
       var vectorIdCounts = {{ summary_report.vector_id_counts|tojson }};
