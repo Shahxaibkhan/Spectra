@@ -61,6 +61,8 @@ class SEPage(BasePage):
                     # Move the file cursor to the beginning for reading
                     temp_file.seek(0)
 
+                    
+
                     # Read the content into a list
                     logfile = temp_file.readlines()
 
@@ -103,7 +105,7 @@ class SEPage(BasePage):
         # Generate summary report
         summary_report = self.generate_summary_report(log_file)
         # Return the generated summary report to be displayed in the HTML template
-        return render_template('vector_stats.html', summary_report=summary_report)
+        return render_template('se_stats.html', summary_report=summary_report)
   
 
     def generate_summary_report(self,log_file):
@@ -111,10 +113,11 @@ class SEPage(BasePage):
         check_results = self.generate_checks(log_file)
         check_dn_details_json = self.dn_details(log_file)
         check_vector_details_json = self.vector_details(log_file)
-
+        check_tenant_add_details = self.tenant_add_details(log_file)
         # Process results for summary report
         total_calls = len(vector_stats)
 
+        print(check_tenant_add_details)
         # Parse the JSON string into a list of dictionaries
         check_dn_details = json.loads(check_dn_details_json)
 
@@ -307,10 +310,55 @@ class SEPage(BasePage):
             "dn_added_count": dn_added_count,
             "dn_edited_count": dn_edited_count,
             "vector_added_count": vector_added_count,
-            "vector_edited_count": vector_edited_count
+            "vector_edited_count": vector_edited_count,
+            "tenant_add_details": check_tenant_add_details
         }
 
         return summary_report
+
+    def tenant_add_details(self, logs):
+        tenant_details = {}
+
+        # Process logs sequentially
+        for log in logs:
+            # Extract tenant addition start information
+            start_match = re.search(r'(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2},\d{3}) \[\d+\]  INFO : \[ ScriptExecutorConfigManager::subTenantAdd > NewTenantID:(\d+), NewTenantName:(\w+) \]~~', log)
+            if start_match:
+                log_timestamp = start_match.group(1)
+                tenant_id = start_match.group(2)
+                tenant_name = start_match.group(3)
+
+                tenant_details[tenant_id] = {
+                    "tenant_name": tenant_name,
+                    "start_time": datetime.strptime(log_timestamp, '%Y-%m-%d %H:%M:%S,%f'),
+                    "end_time": None,
+                    "processing_time": None,
+                }
+
+            # Extract tenant addition completion information
+            complete_match = re.search(r'(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2},\d{3}) \[\d+\]  INFO : \[ ScriptExecutorConfigManager::registerDynamicNotificationHandlers > Subscribers added for tenantName:(\w+), tenantID(\d+) \]~~', log)
+            if complete_match:
+                log_timestamp = complete_match.group(1)
+                tenant_name = complete_match.group(2)
+                tenant_id = complete_match.group(3)
+
+                if tenant_id in tenant_details:
+                    end_time = datetime.strptime(log_timestamp, '%Y-%m-%d %H:%M:%S,%f')
+                    start_time = tenant_details[tenant_id]["start_time"]
+                    processing_time = (end_time - start_time).total_seconds()* 1000
+
+                    # Update tenant details with completion information
+                    tenant_details[tenant_id]["end_time"] = end_time
+                    tenant_details[tenant_id]["processing_time"] = processing_time
+                    print("processing time:",processing_time)
+
+        # Calculate the total number of tenants added
+        total_tenants_added = len(tenant_details)
+
+        return {
+            "tenant_details": tenant_details,
+            "total_tenants_added": total_tenants_added
+        }
 
 
     def vector_details(self, logs):
@@ -326,7 +374,7 @@ class SEPage(BasePage):
             # Extract keys from the first set of logs
             match = re.search(r'\[ Received routing-entity-(\w+) event with id: re_(?:add|change)_(\w+)_vector tenant: (\w+) entity: vector key: (\d+) event time: (\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d+Z) \]~~', log)
             if match:
-                key = int(match.group(4))
+                key = match.group(4)
                 request_type = match.group(1)
                 tenant_name = match.group(3)
                 entity_type = "vector"
@@ -351,7 +399,7 @@ class SEPage(BasePage):
 
                 try:
                     payload_details = json.loads(payload_str)
-                    key_from_payload = int(payload_details.get("key", -1))
+                    key_from_payload = payload_details.get("key", -1)
                     entity_type_from_payload = payload_details.get("type")
                     if key_from_payload in key_map:
                         for request in key_map[key_from_payload]["requests"]:
@@ -364,10 +412,10 @@ class SEPage(BasePage):
             sync_match = re.search(r'(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2},\d{3}) \[\d+\]  DEBUG: \[ ScriptExecutor::compileVectorRE > Vector updated\. ID:(\d+)\|(\d+\.\d+\.\d+) \]', log)
             if sync_match:
                 log_timestamp = sync_match.group(1)
-                entity_key = int(sync_match.group(2))
+                entity_key = sync_match.group(2)
 
                 try:
-                    entity_id = int(sync_match.group(3).split('.')[-1])
+                    entity_id = sync_match.group(3).split('.')[-1]
                     if entity_id in key_map:
                         for request in key_map[entity_id]["requests"]:
                             if not request.get("sync_details"):                   
@@ -424,7 +472,7 @@ class SEPage(BasePage):
             match = re.search(r'\[ Received routing-entity-(\w+) event with id: re_(?:add|change)_(\w+)_callType tenant: (\w+) entity: callType key: (\d+) event time: (\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d+Z) \]~~', log)
           
             if match:
-                key = int(match.group(4))
+                key = match.group(4)
                 request_type = match.group(1)
                 tenant_name = match.group(3)
                 entity_type = "callType"
@@ -452,7 +500,7 @@ class SEPage(BasePage):
 
                 try:
                     payload_details = json.loads(payload_str)
-                    key_from_payload = int(payload_details.get("key", -1))
+                    key_from_payload = payload_details.get("key", -1)
                     entity_type_from_payload = payload_details.get("type")
 
                     if key_from_payload in key_map and entity_type_from_payload == key_map[key_from_payload]["request"]["entity"]:
