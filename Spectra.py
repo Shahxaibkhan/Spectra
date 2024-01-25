@@ -7,6 +7,7 @@ from datetime import datetime
 from pages.im_page import IMPage
 from pages.se_page import SEPage
 from pages.sfs_page import SFSPage
+from pages.db_page import DBPage
 
 
 
@@ -15,6 +16,7 @@ app = Flask(__name__)
 im_page = IMPage(app)
 se_page = SEPage(app)
 sfs_page = SFSPage(app)
+db_page = DBPage(app)
 
 
 
@@ -333,6 +335,17 @@ def analyze_sfsim():
 @app.route('/analyze/sfs-se')
 def analyze_sfsse():
     return render_template('sfsse.html')  
+
+@app.route('/analyze/db')
+def analyze_db():
+    return db_page.analyze() 
+
+
+@app.route('/Display_Database_stats', methods=['POST'])
+def process_database():
+    return db_page.fetch_and_generate_report() 
+
+
 
 @app.route('/analyze/im')
 def analyze_im():

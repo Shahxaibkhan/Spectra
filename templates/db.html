@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>S.P.E.C.T.R.A. - DB Stats Analyzer</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f4f4f4;
+            text-align: center;
+            padding: 20px;
+            margin: 0; /* Add margin to reset the default margin */
+        }
+         /* New style for the footer */
+        footer {
+            background-color: maroon;
+            color: white;
+            padding: 10px;
+            position: fixed;
+            bottom: 0;
+            left: 0; /* Align the left edge with the left edge of the viewport */
+            width: 100%; /* Make the footer full width */
+            box-sizing: border-box; /* Include padding and border in the total width */
+        }
+        h1 {
+            color: #333;
+        }
+        form {
+            margin: 0 auto;
+            max-width: 400px;
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #555;
+        }
+        input {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 15px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        input[type="submit"] {
+            background-color: #800000;
+            color: #fff;
+            cursor: pointer;
+        }
+        input[type="submit"]:hover {
+            background-color: rgb(67, 9, 9);
+        }
+    </style>
+</head>
+<body>
+    <h1>Database Connection Form</h1>
+    <form method="post" action="/Display_Database_stats">
+        <label for="db_ip">Database IP:</label>
+        <input type="text" name="db_ip" required>
+        <br>
+        <label for="db_port">Port:</label>
+        <input type="text" name="db_port" required>
+        <br>
+        <label for="db_username">Username:</label>
+        <input type="text" name="db_username" required>
+        <br>
+        <label for="db_password">Password:</label>
+        <input type="password" name="db_password" required>
+        <br>
+        <label for="db_name">Database Name:</label>
+        <input type="text" name="db_name" required>
+        <br>
+        <input type="submit" value="Collect Stats from Database">
+    </form>
+    <footer>
+        Utility developed by Shahzaib Khan
+    </footer>
+</body>
+</html>
