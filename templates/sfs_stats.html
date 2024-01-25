@@ -196,7 +196,7 @@
                         <td>{{ tenant_id }}</td>
                         <td>{{ event.sending_event.event_name }}</td>
                         <td>
-                            {% if event.processing_time != "Missing or Incorrect Sending Event" %}
+                            {% if event.processing_time != "Missing or Incorrect Receiving Event" %}
                                 {{ event.processing_time }}
                             {% else %}
                                 Missing
