@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>S.P.E.C.T.R.A. - DB Statistics</title>
+  <!-- Include jQuery -->
+  <script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
+  <!-- Include DataTables CSS and JS -->
+  <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.10.23/css/jquery.dataTables.min.css">
+  <script src="https://cdn.datatables.net/1.10.23/js/jquery.dataTables.min.js"></script>
+  <!-- Include Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: #f4f4f4;
+      text-align: center;
+      padding: 20px;
+      margin: 0;
+    }
+
+    table {
+      width: 80%;
+      margin: 20px auto;
+      border-collapse: collapse;
+      background-color: #fff;
+      color: #333;
+      box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+    }
+
+
+    h1 {
+      color: #800000;
+      margin-bottom: 70px;
+    }
+
+    th,
+    td {
+      padding: 15px;
+      border: 1px solid #ddd;
+      text-align: left;
+    }
+
+    th {
+      background-color: #800000;
+      color: #fff;
+    }
+
+    .table-separator {
+      border-top: 2px double #800000;
+      margin-top: 20px;
+    }
+
+    .table-responsive, .query {
+      text-align: left;
+      margin: 10px 0;
+    }
+
+    .query pre {
+      white-space: pre-wrap;
+      word-wrap: break-word;
+      padding: 10px;
+      background-color: #f9f9f9;
+      border: 1px solid #ddd;
+      border-radius: 5px;
+    }
+  </style>
+</head>
+
+<body>
+  <h1><u>Database Query Results</u></h1>
+
+  {% for result in results_list %}
+    <div class="query">
+      <h3>Query:</h3>
+      <pre>{{ result.query }}</pre>
+    </div>
+
+    {% if result.data %}
+      <div class="table-responsive">
+        <h3>Result:</h3>
+        <table class="display">
+          <thead>
+            <tr>
+              {% for column in columns[loop.index0] %}
+                <th>{{ column }}</th>
+              {% endfor %}
+            </tr>
+          </thead>
+          <tbody>
+            {% for row in result.data %}
+              <tr>
+                {% for value in row %}
+                  <td>{{ value }}</td>
+                {% endfor %}
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <p>No results for this query.</p>
+    {% endif %}
+
+    <div class="table-separator"></div>
+  {% endfor %}
+
+  <script>
+    $(document).ready(function () {
+      $('table').DataTable();
+    });
+  </script>
+</body>
+
+</html>
