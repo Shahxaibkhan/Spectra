@@ -129,9 +129,9 @@
         {% for event_name, min_time in summary_data.min_processing_times.items() %}
             <tr>
                 <td>{{ event_name }}</td>
-                <td>{{ min_time.time }}</td>
+                <td>{{ "{:.3f}".format(min_time.time) }}</td>
                 <td>{{ min_time.ixn_ids }}</td>
-                <td>{{ summary_data.max_processing_times.get(event_name, "N/A").time }}</td>
+                <td>{{ "{:.3f}".format(summary_data.max_processing_times.get(event_name, "N/A").time) }}</td>
                 <td>{{ summary_data.max_processing_times.get(event_name, "N/A").ixn_ids }}</td>
             </tr>
         {% endfor %}
@@ -196,8 +196,8 @@
                         <td>{{ tenant_id }}</td>
                         <td>{{ event.sending_event.event_name }}</td>
                         <td>
-                            {% if event.processing_time != "Missing or Incorrect Receiving Event" %}
-                                {{ event.processing_time }}
+                            {% if event.processing_time != 99999999 %}
+                                {{ "{:.3f}".format(event.processing_time) }}
                             {% else %}
                                 Missing
                             {% endif %}

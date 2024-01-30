@@ -316,26 +316,30 @@ class SFSPage(BasePage):
 
 
                 ixn_events = []  # List to store events for each ixn_id
-
+                
                 # Iterate through sending events
                 for sending_event in events:
+                    
                     if sending_event['status'] == 'sending':
                         sent_event = sending_event['event_name']
                         sending_agent_id = sending_event['agent_id']
+                        sending_agent_id_header = sending_event.get('header', {}).get('party', 'default_value')
 
+                        
                         # Find corresponding receiving event
                         corresponding_receiving_event = self.get_corresponding_receiving_event(sent_event)
                         if corresponding_receiving_event is not None:
                             # Check if the corresponding receiving event is missing and timestamp order is correct
                             receiving_event_found = False
-
                             for receiving_event in events:
+                                
                                 if (
                                     receiving_event['status'] == 'receiving'
                                     and receiving_event['event_name'] == corresponding_receiving_event
-                                    and receiving_event['agent_id'] == sending_agent_id
+                                    and (receiving_event['agent_id'] == sending_agent_id or receiving_event['header']['party'] == sending_agent_id_header)
                                     and datetime.strptime(receiving_event['timestamp'], "%Y-%m-%d %H:%M:%S,%f") > datetime.strptime(sending_event['timestamp'], "%Y-%m-%d %H:%M:%S,%f")
                                 ):
+
                                     # Calculate time difference
                                     sending_time = datetime.strptime(sending_event['timestamp'], "%Y-%m-%d %H:%M:%S,%f")
                                     receiving_time = datetime.strptime(receiving_event['timestamp'], "%Y-%m-%d %H:%M:%S,%f")
@@ -345,8 +349,9 @@ class SFSPage(BasePage):
                                     details = {
                                         'sending_event': sending_event,
                                         'receiving_event': receiving_event,
-                                        'processing_time': str(processing_time),
+                                        'processing_time': processing_time,
                                     }
+
                                     ixn_events.append(details)  # Append details to the list
                                     receiving_event_found = True
 
@@ -354,16 +359,16 @@ class SFSPage(BasePage):
                                     time_difference_seconds = processing_time
 
                                     if sent_event not in max_processing_times or time_difference_seconds > max_processing_times[sent_event]['time']:
-                                        max_processing_times[sent_event] = {'time': time_difference_seconds, 'ixn_ids': [ixn_id]}
+                                        max_processing_times[sent_event] = {'time': time_difference_seconds, 'tenant_id': tenant_id, 'ixn_ids': ixn_id}
                                     elif time_difference_seconds == max_processing_times[sent_event]['time']:
                                         max_processing_times[sent_event]['tenant_id'] = tenant_id
-                                        max_processing_times[sent_event]['ixn_id'] = ixn_id
+                                        max_processing_times[sent_event]['ixn_ids'] = ixn_id
 
                                     if sent_event not in min_processing_times or time_difference_seconds < min_processing_times[sent_event]['time']:
-                                        min_processing_times[sent_event] = {'time': time_difference_seconds, 'ixn_ids': [ixn_id]}
+                                        min_processing_times[sent_event] = {'time': time_difference_seconds, 'tenant_id': tenant_id, 'ixn_ids': ixn_id}
                                     elif time_difference_seconds == min_processing_times[sent_event]['time']:
                                         min_processing_times[sent_event]['tenant_id'] = tenant_id
-                                        min_processing_times[sent_event]['ixn_id'] = ixn_id
+                                        min_processing_times[sent_event]['ixn_ids'] = ixn_id
 
 
                                     break  # Break out of the loop once a matching receiving event is found
@@ -373,7 +378,7 @@ class SFSPage(BasePage):
                                 details = {
                                     'sending_event': sending_event,
                                     'receiving_event': None,
-                                    'processing_time': "Missing or Incorrect Receiving Event",
+                                    'processing_time': 99999999,
                                 }
                                 ixn_events.append(details)  # Append details to the list
 
@@ -559,10 +564,10 @@ class SFSPage(BasePage):
                 }
                 json_data[tenant_id][ixn_id].update(transfer_details)
 
-        # output_file_path='debug_output.json'
-        # # # Write JSON data to output file for debugging
-        # with open(output_file_path, 'w') as output_file:
-        #     json.dump(json_data, output_file, indent=2)
+        output_file_path='debug_output.json'
+        # # Write JSON data to output file for debugging
+        with open(output_file_path, 'w') as output_file:
+            json.dump(json_data, output_file, indent=2)
 
         # Convert the JSON data to a JSON-formatted string
         json_string = json.dumps(json_data, indent=2)
