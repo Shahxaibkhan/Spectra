@@ -8,71 +8,94 @@
     body {
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
       background-color: #f4f4f4;
-      text-align: center;
-      padding: 20px;
+      display: flex;
+      height: 100vh;
       margin: 0;
-      opacity: 0;
-      transition: opacity 1s ease-in-out;
     }
 
-    header {
-      
+    .left-side, .right-side {
+      flex: 1;
+    }
+
+    .left-side {
+      text-align: center;
       padding: 20px;
-      margin-bottom: 30px;
-      border-radius: 10px;
+      border-radius: 10px 0 0 10px;
+      background-color: #fff; /* Set your desired background color */
+      box-shadow: 5px 0 10px rgba(0, 0, 0, 0.1); /* Add a subtle box shadow for separation */
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+
+    .right-side {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      border-radius: 0 0px 0px 0;
+      background-color: #800000; /* Set your desired background color */
+      box-shadow: -5px 0 10px rgba(0, 0, 0, 0.1); /* Add a subtle box shadow for separation */
     }
 
     h1 {
-      color: black;
+      color: #333;
       font-size: 48px;
       font-weight: bold;
       margin-bottom: 10px;
-      position: relative;
-      display: inline-block;
     }
-
-  
 
     h2 {
       color: #800000;
-      /* font-size: 18px; */
+      font-size: 18px;
+      margin-bottom: 20px;
     }
 
     .button-container {
-      display: flex;
-      justify-content: center;
-      flex-wrap: wrap;
+      /* display: flex; */
+      flex-direction: column;
+      align-items: center;
       margin-top: 20px;
+    }
+
+    .button-container h2 {
+      color: #ffffff;
+      font-size: 18px;
+      margin-bottom: 20px;
     }
 
     button {
       margin: 10px;
       padding: 18px 36px;
       border: none;
-      border-radius: 25px;
-      background: linear-gradient(to right, black, #b30000,#b30000,black);
-      color: white;
+      border-radius: 5px;
+      background: #ffffff;
+      color: #800000;
       font-size: 20px;
       cursor: pointer;
-      transition: background 0.3s;
+      transition: background 0.3s, box-shadow 0.3s;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); /* Added box-shadow for raised effect */
     }
 
+
     button:hover {
-      background: linear-gradient(to right, #b30000, black, black,#b30000);
-      border:1px solid black;
+      background:#ddeaf7;
+      /* border: 1px solid #333; */
+      box-shadow: 0 6px 8px rgba(0, 0, 0, 0.2);
       font-weight: bold;
     }
 
     footer {
-      background: linear-gradient(to right, black, #b30000,#b30000,black);
-      color: white;
+      background: linear-gradient(to right, #800000, #333,#800000);
+      color: #ffffff;
       padding: 10px;
       position: fixed;
       bottom: 0;
       left: 0;
       width: 100%;
       box-sizing: border-box;
-      border-top: 2px solid #800000;
+      border-top: 2px solid #333;
+      text-align: center;
     }
 
     .icon {
@@ -80,39 +103,70 @@
       font-size: 24px;
       margin-right: 10px;
     }
+
+    .logo {
+    font-size: 120px;
+    font-weight: bold;
+    overflow: hidden;
+    white-space: nowrap;
+    }
+
+    .logo-animate {
+      animation: revealLetters 5s;
+    }
+
+    @keyframes revealLetters {
+      0% {
+        width: 0%;
+      }
+      16.66% {
+        width: 100%;
+      }
+      33.33% {
+        width: 100%;
+      }
+      50% {
+        width: 100%;
+      }
+      66.66% {
+        width: 100%;
+      }
+      83.33% {
+        width: 100%;
+      }
+      100% {
+        width: 100%;
+      }
+    }
+
   </style>
 </head>
-<body onload="fadeIn()">
-  <header>
-    <h1>S.P.E.C.T.R.A.</h1>
+<body>
+  <div class="left-side">
+    <div class="logo logo-animate">S.P.E.C.T.R.A.</div>
     <h2>(Service Performance, Errors, Connectivity, Time, and Response Analyzer)</h2>
-  </header>
+  </div>
 
-  <h2 id="service_heading"><u>Intra-Service Analysis: </u></h2>
+  <div class="right-side">
     <div class="button-container">
-        <a href="/analyze/se"><button>SE Logs</button></a>
-        <a href="/analyze/sfs"><button>SFS Logs</button></a>
-        <a href="/analyze/im"><button>IM Logs</button></a>
-        <a href="/analyze/db"><button>DB Stats</button></a>
-        <!-- Add other input fields as needed -->
-    </div>
-
-    <h2 id="service_heading"><u>Inter-Service Analysis:</u></h2>
-    <div class="button-container">
+      <h2>Intra-Service Analyzer</h2>
+      <a href="/analyze/se"><button>SE Logs</button></a>
+      <a href="/analyze/sfs"><button>SFS Logs</button></a>
+      <a href="/analyze/im"><button>IM Logs</button></a>
+      <br>
+      <br>
+      <h2>Inter-Service Analyzer</h2>
       <a href="/analyze/sfs-im"><button>SFS - IM Logs</button></a>
       <a href="/analyze/sfs-se"><button>SFS - SE Logs</button></a>
-        <!-- Add other input fields as needed -->
+      <br>
+      <br>
+      <h2>Database Analyzer</h2>
+      <a href="/analyze/db"><button>DB Stats</button></a>
     </div>
-
+  </div>
 
   <footer>
     <span class="icon">🚀</span> Utility developed by <b>Shahzaib Khan</b>
   </footer>
-
-  <script>
-    function fadeIn() {
-      document.body.style.opacity = 1;
-    }
-  </script>
 </body>
 </html>
