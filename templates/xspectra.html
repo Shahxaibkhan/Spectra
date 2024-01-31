@@ -107,6 +107,8 @@
       font-weight: bold;
     }
 
+    
+
     button.eye-button {
       font-size: 16px;
       padding: 10px;
@@ -148,7 +150,7 @@
     
     
     .Scenario {
-            width: 45%;
+            width: 40%;
             caret-color: transparent;
             display: flex;
             align-items: center;
@@ -173,16 +175,81 @@
   </style>
   <script>
     function validateForm() {
+      var dbCheckbox = document.forms["analyzeForm"]["Scenario"][3];
       var username = document.forms["analyzeForm"]["username"].value;
       var password = document.forms["analyzeForm"]["password"].value;
-  
-      if (username === "" || password === "") {
-        alert("Username and password are required");
-        return false;
+      var startDate = document.forms["analyzeForm"]["start_date"].value;
+      var startTime = document.forms["analyzeForm"]["start_time"].value;
+      var endDate = document.forms["analyzeForm"]["end_date"].value;
+      var endTime = document.forms["analyzeForm"]["end_time"].value;
+
+      if (dbCheckbox.checked) {
+        // Check if any of the DB-fields are empty
+        if (startDate === "" || startTime === "" || endDate === "" || endTime === "") {
+          alert("All DB fields are required");
+          return false;
+        }
+      } else {
+        // Check if username or password is empty
+        if (username === "" || password === "") {
+          alert("Username and password are required");
+          return false;
+        }
       }
+
       return true;
     }
+
+  
+    function toggleFields() {
+      var dbCheckbox = document.forms["analyzeForm"]["Scenario"][3];
+      var Logfields = document.querySelectorAll('.LOG-fields');
+      var DBfields = document.querySelectorAll('.DB-fields');
+      var intra = document.querySelectorAll('.intra');
+      var inter = document.querySelectorAll('.inter');
+      var db = document.querySelectorAll('.db');
+
+      if (dbCheckbox.checked) {
+        DBfields.forEach(function (field) {
+          field.style.display = 'block';
+        });
+        Logfields.forEach(function (field) {
+          field.style.display = 'none';
+        });
+        intra.forEach(function (button) {
+          button.style.display = 'none';
+        });
+        inter.forEach(function (button) {
+          button.style.display = 'none';
+        });
+        db.forEach(function (button) {
+          button.style.removeProperty('display');
+        });
+      } else {
+        DBfields.forEach(function (field) {
+          field.style.display = 'none';
+        });
+        Logfields.forEach(function (field) {
+          field.style.display = 'block';
+        });
+        intra.forEach(function (button) {
+          button.style.removeProperty('display');
+        });
+        inter.forEach(function (button) {
+          button.style.removeProperty('display');
+        });
+        db.forEach(function (button) {
+          button.style.display = 'none';
+        });
+      }
+    }
+
+  
+    document.addEventListener("DOMContentLoaded", function() {
+      toggleFields(); // Initial state based on checkbox status
+    });
   </script>
+  
 </head>
 
 <body onload="fadeIn()">
@@ -191,7 +258,7 @@
     <h2>( Xtended - Service Performance, Errors, Connectivity, Time, and Response Analyzer )</h2>
   </header>
 
-  <form method="post" action="/analyze" name="analyzeForm" onsubmit="return validateForm()" target="_blank">
+  <form method="post" action="/Display_Stats" name="analyzeForm" onsubmit="return validateForm()" target="_blank">
     <div>
       <div id="label">
         <label for="labSelect">Load Lab:</label>
@@ -211,44 +278,77 @@
       <!-- New radio buttons section -->
       <div class="Scenario">
         <label>
-          <input type="radio" name="Scenario" value="Primary" checked>
+          <input type="radio" name="Scenario" value="Primary" checked onclick="toggleFields()">
           <div class="custom-radio"></div> Primary
         </label>
         <label>
-          <input type="radio" name="Scenario" value="Secondary">
+          <input type="radio" name="Scenario" value="Secondary" onclick="toggleFields()">
           <div class="custom-radio"></div> Secondary
         </label>
         <label>
-          <input type="radio" name="Scenario" value="HA Scenario" >
+          <input type="radio" name="Scenario" value="HA Scenario"  onclick="toggleFields()">
           <div class="custom-radio"></div> HA 
+        </label>
+        <label>
+          <input type="radio" name="Scenario" value="DB" onclick="toggleFields()">
+          <div class="custom-radio"></div> DB 
         </label>
       </div>
     </div>
     
 
-    <div>
-      <div id="label">
-        <label for="LogsPath">Log Path:</label>
+    <div class="LOG-fields">
+      <div>
+        <div id="label">
+          <label for="LogsPath">Log Path:</label>
+        </div>
+        <input type="text" name="LogsPath" value="/var/log/mega">
       </div>
-      <input type="text" name="LogsPath" value="/var/log/mega"> <!-- Added name attribute -->
+    
+      <div>
+        <div id="label">
+          <label for="username">Username:</label>
+        </div>
+        <input type="text" name="username" placeholder="Enter your username">
+      </div>
+    
+      <div>
+        <div id="label">
+          <label for="password">Password:</label>
+        </div>
+        <input type="password" name="password" placeholder="Enter your password">
+      </div>
+    </div>
+    
+    <div class="DB-fields">
+      <div>
+        <div id="label">
+          <label for="start_date">Date:</label>
+        </div>
+        <input type="date" name="start_date">
+      </div>
+      <div>
+        <div id="label">
+          <label for="start_time">Start Time:</label>
+        </div>
+        <input type="time" name="start_time">
+      </div>
+      <div>
+        <div id="label">
+          <label for="end_date">Date:</label>
+        </div>
+        <input type="date" name="end_date">
+      </div>
+      <div>
+        <div id="label">
+          <label for="end_time">End Time:</label>
+        </div>
+        <input type="time" name="end_time">
+      </div>
     </div>
 
-    <div>
-      <div id="label">
-        <label for="username">Username:</label>
-      </div>
-      <input type="text" name="username" placeholder="Enter your username"> <!-- Added name attribute -->
-    </div>
-
-    <div>
-      <div id="label">
-        <label for="password">Password:</label>
-      </div>
-      <input type="password" name="password" placeholder="Enter your password"> <!-- Added name attribute -->
-    </div>
-
-    <h2 id="service_heading"><u>Intra-Service Analysis: </u></h2>
-    <div class="button-container">
+    <h2 class="intra" id="service_heading"><u>Intra-Service Analysis: </u></h2>
+    <div class="intra button-container">
         <input type="submit" name="action" value="SE">
         <input type="submit" name="action" value="SFS">
         <input type="submit" name="action" value="IM">
@@ -256,10 +356,17 @@
         <!-- Add other input fields as needed -->
     </div>
 
-    <h2 id="service_heading"><u>Inter-Service Analysis:</u></h2>
-    <div class="button-container">
+    <h2 class="inter" id="service_heading"><u>Inter-Service Analysis:</u></h2>
+    <div class="inter button-container">
         <input type="submit" name="action" value="SFS - IM">
         <input type="submit" name="action" value="SFS - SE">
+        <!-- Add other input fields as needed -->
+    </div>
+
+    <h2 class="db" id="service_heading"><u>Database Analyzer:</u></h2>
+    <div class="db button-container">
+        <input type="submit" name="action" value="Connect & Generate Results">
+
         <!-- Add other input fields as needed -->
     </div>
 
