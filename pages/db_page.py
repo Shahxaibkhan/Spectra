@@ -1,11 +1,15 @@
 from flask import Flask, render_template, request
 from .base_page import BasePage
+import configparser
 import psycopg2
+
+
 
 class DBPage(BasePage):
 
-    def __init__(self, app):
+    def __init__(self, app, db_config=None):
         self.app = app
+        self.db_config = db_config
 
     def analyze(self):
         return render_template('db.html')
@@ -69,7 +73,37 @@ class DBPage(BasePage):
 
 
     def fetch_db_details(self):
-        if request.method == 'POST':
+        if request.method == 'POST' and 'action' in request.form and request.form['action'] == "Connect & Generate Results":
+
+            lab = request.form.get('labSelect')
+            start_date = request.form.get('start_date')
+            start_time = request.form.get('start_time')
+            end_date = request.form.get('end_date')
+            end_time = request.form.get('end_time')
+
+            # Fetch lab details from the separate database config file
+            db_ip = self.db_config.get(lab, 'DB_IP')
+            db_port = self.db_config.get(lab, 'DB_PORT')
+            db_username = self.db_config.get(lab, 'DB_USERNAME')
+            db_password = self.db_config.get(lab, 'DB_PASSWORD')
+            db_name = self.db_config.get(lab, 'DB_DATABASE')
+
+            print(f"Database Details: {db_ip}, {db_port}, {db_username}, {db_password}, {db_name}")
+            print(f"Date and Time Details: Start Date: {start_date}, End Date: {end_date}, Start Time: {start_time}, End Time: {end_time}")
+
+            return {
+                'db_ip': db_ip,
+                'db_port': db_port,
+                'db_username': db_username,
+                'db_password': db_password,
+                'db_name': db_name,
+                'start_date': start_date,
+                'end_date': end_date,
+                'start_time': start_time,
+                'end_time': end_time
+            }
+        elif request.method == 'POST' :
+            
             db_ip = request.form.get('db_ip')
             db_port = request.form.get('db_port')
             db_username = request.form.get('db_username')
@@ -94,6 +128,7 @@ class DBPage(BasePage):
                 'start_time': start_time,
                 'end_time': end_time
             }
+   
         else:
             return None
 
