@@ -31,7 +31,6 @@
       box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
     }
 
-
     h1 {
       color: #800000;
       margin-bottom: 70px;
@@ -54,7 +53,8 @@
       margin-top: 20px;
     }
 
-    .table-responsive, .query {
+    .table-responsive,
+    .query {
       text-align: left;
       margin: 10px 0;
     }
@@ -76,10 +76,10 @@
   {% for result in results_list %}
     <div class="query">
       <h3>Query:</h3>
-      <pre>{{ result.query }}</pre>
+      <pre>{{ result['formatted_query'] }}</pre>
     </div>
 
-    {% if result.data %}
+    {% if result['data'] %}
       <div class="table-responsive">
         <h3>Result:</h3>
         <table class="display">
@@ -91,7 +91,7 @@
             </tr>
           </thead>
           <tbody>
-            {% for row in result.data %}
+            {% for row in result['data'] %}
               <tr>
                 {% for value in row %}
                   <td>{{ value }}</td>
