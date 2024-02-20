@@ -29,8 +29,8 @@ class DBPage(BasePage):
             if sql_queries:
                 connection_status, results_list = self.connect_and_fetch_results(**db_details, sql_queries=sql_queries)
 
-                print(f"Connection Status: {connection_status}")
-                print(f"Results List: {results_list}")
+                # print(f"Connection Status: {connection_status}")
+                # print(f"Results List: {results_list}")
 
                 if connection_status:
                     return render_template('db_stats.html', results_list=results_list, columns=columns)
@@ -88,8 +88,8 @@ class DBPage(BasePage):
             db_password = self.db_config.get(lab, 'DB_PASSWORD')
             db_name = self.db_config.get(lab, 'DB_DATABASE')
 
-            print(f"Database Details: {db_ip}, {db_port}, {db_username}, {db_password}, {db_name}")
-            print(f"Date and Time Details: Start Date: {start_date}, End Date: {end_date}, Start Time: {start_time}, End Time: {end_time}")
+            # print(f"Database Details: {db_ip}, {db_port}, {db_username}, {db_password}, {db_name}")
+            # print(f"Date and Time Details: Start Date: {start_date}, End Date: {end_date}, Start Time: {start_time}, End Time: {end_time}")
 
             return {
                 'db_ip': db_ip,
@@ -114,8 +114,8 @@ class DBPage(BasePage):
             start_time = request.form.get('start_time')
             end_time = request.form.get('end_time')
 
-            print(f"Database Details: {db_ip}, {db_port}, {db_username}, {db_password}, {db_name}")
-            print(f"Date and Time Details: Start Date: {start_date}, End Date: {end_date}, Start Time: {start_time}, End Time: {end_time}")
+            # print(f"Database Details: {db_ip}, {db_port}, {db_username}, {db_password}, {db_name}")
+            # print(f"Date and Time Details: Start Date: {start_date}, End Date: {end_date}, Start Time: {start_time}, End Time: {end_time}")
 
             return {
                 'db_ip': db_ip,
@@ -149,17 +149,30 @@ class DBPage(BasePage):
                     WHERE call_time >= %s AND call_time <= %s
                     GROUP BY hour1
                     ORDER BY hour1 LIMIT 2""",
-                "SELECT guid, tenant, tenant_id, ixn_id FROM t_acdr WHERE call_time >= %s AND call_time <= %s LIMIT 3;",
-                "SELECT guid, tenant, tenant_id, ixn_id FROM t_acdr WHERE call_time >= %s AND call_time <= %s LIMIT 10;"
+                "select count(*) as AG_LOG_COUNT from t_aglog ta WHERE event_time >= %s AND event_time <= %s;",
+                "select count(*) as CALL_QUEUE_LOG_COUNT from t_call_queue_log tcql WHERE event_time >= %s AND event_time <= %s;",
+                "select count(*) as ACDR_COUNT from t_acdr ta WHERE call_time >= %s AND call_time <= %s;",
+                "select count(distinct agent_id) DISTINCT_AGENT_COUNT from t_aglog ta WHERE event_time >= %s AND event_time <= %s;",
+                """select agent_state, count(*) agent_state_count from t_aglog ta 
+                    WHERE event_time >= %s AND event_time <= %s
+                    GROUP BY agent_state
+                    ORDER BY agent_state""",
+                """select event_type, count(*) event_type_count from t_call_queue_log tcql 
+                    WHERE event_time >= %s AND event_time <= %s
+                    GROUP BY event_type
+                    ORDER BY event_type"""
             ]
 
         columns = [
-            ['Tenant', 'Tenant ID'],
-            ['GUID', 'Tenant', 'Tenant ID', 'IXN ID'],
-            ['hour1', '# of calls', 'AVG_ACDSS_DELAY_SEC', 'MAX_ACDSS_DELAY_SEC', 'MIN_ACDSS_DELAY_SEC',
-             'AVG_ASYNC_DELAY_SEC', 'MAX_ASYNC_DELAY_SEC', 'MIN_ASYNC_DELAY_SEC'],
-            ['GUID', 'Tenant', 'Tenant ID', 'IXN ID'],
-            ['GUID', 'Tenant', 'Tenant ID', 'IXN ID'],
-        ]
+                ['Tenant', 'Tenant ID'],
+                ['GUID', 'Tenant', 'Tenant ID', 'IXN ID'],
+                ['hour1', '# of calls', 'AVG_ACDSS_DELAY_SEC', 'MAX_ACDSS_DELAY_SEC', 'MIN_ACDSS_DELAY_SEC', 'AVG_ASYNC_DELAY_SEC', 'MAX_ASYNC_DELAY_SEC', 'MIN_ASYNC_DELAY_SEC'],
+                ['AG_LOG_COUNT'],  # AG LOG COUNT
+                ['CALL_QUEUE_LOG_COUNT'],  # CALL QUEUE LOG COUNT
+                ['ACDR_COUNT'],  # CDR COUNT
+                ['DISTINCT_AGENT_COUNT'],  # TOTAL AGENT COUNT
+                ['agent_state', 'agent_state_count'],  # AGENT STATE WISE COUNT_DB
+                ['event_type', 'event_type_count']  # INTERACTION EVENT TYPE WISE COUNT_DB
+            ]
 
         return queries, columns
