@@ -63,9 +63,52 @@
       white-space: pre-wrap;
       word-wrap: break-word;
       padding: 10px;
-      background-color: #f9f9f9;
-      border: 1px solid #ddd;
+      background-color: #585858c9;
+      border: 1px solid #7c0003;
       border-radius: 5px;
+      color: white;
+      font-weight: bold;
+      letter-spacing: -0.5px;
+      line-height: 1.25;
+    }
+    .enum-reference-container {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 20px;
+    }
+
+    .enum-set {
+      flex-basis: 48%;
+      border: 1px solid #800000;
+      padding: 10px;
+      border-radius: 5px;
+    }
+
+    .enum-table {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .enum-row {
+      display: flex;
+      justify-content: space-between;
+      border-top: 1px solid #ddd;
+      margin-top: 5px;
+    }
+
+    .enum-column {
+      flex-basis: 48%;
+    }
+
+    .enum-column.header {
+      font-weight: bold;
+    }
+    .enum-heading{
+      background-color: #800000;
+      color: #fff;
+      margin: 0px;
+      padding: 15px;
+      border-radius: 5px 5px 0px 0px;
     }
   </style>
 </head>
@@ -107,6 +150,152 @@
 
     <div class="table-separator"></div>
   {% endfor %}
+  <div class="table-separator"></div>
+
+
+  <h1><u>ENUM Reference</u></h1>
+  <div class="enum-reference-container">
+    <div class="enum-set">
+      <h3 class="enum-heading">Call Events:</h3>
+      <div class="enum-table">
+        <div class="enum-row header">
+          <div class="enum-column"><strong>Enum</strong></div>
+          <div class="enum-column"><strong>Value</strong></div>
+        </div>
+        <!-- Enums for Call Events -->
+        <div class="enum-row">
+          <div class="enum-column">UNKNOWN</div>
+          <div class="enum-column">0</div>
+        </div>
+        <div class="enum-row">
+          <div class="enum-column">OFFERED</div>
+          <div class="enum-column">1</div>
+        </div>
+        <div class="enum-row">
+          <div class="enum-column">ROUTE_REQUESTED</div>
+          <div class="enum-column">2</div>
+        </div>
+        <div class="enum-row">
+          <div class="enum-column">ROUTE_SELECTED</div>
+          <div class="enum-column">3</div>
+        </div>
+        <div class="enum-row">
+          <div class="enum-column">ROUTE_TIMEOUT</div>
+          <div class="enum-column">4</div>
+        </div>
+        <div class="enum-row">
+          <div class="enum-column">RINGING</div>
+          <div class="enum-column">5</div>
+        </div>
+        <div class="enum-row">
+          <div class="enum-column">CONNECTED</div>
+          <div class="enum-column">6</div>
+        </div>
+        <div class="enum-row">
+          <div class="enum-column">DISCONNECTED</div>
+          <div class="enum-column">7</div>
+        </div>
+        <div class="enum-row">
+          <div class="enum-column">TERMINATED</div>
+          <div class="enum-column">8</div>
+        </div>
+        <div class="enum-row">
+          <div class="enum-column">HELD</div>
+          <div class="enum-column">9</div>
+        </div>
+        <div class="enum-row">
+          <div class="enum-column">RESUMED</div>
+          <div class="enum-column">10</div>
+        </div>
+        <div class="enum-row">
+          <div class="enum-column">ROUTE_ENDED</div>
+          <div class="enum-column">11</div>
+        </div>
+        <div class="enum-row">
+          <div class="enum-column">TRANSFERRED</div>
+          <div class="enum-column">12</div>
+        </div>
+        <div class="enum-row">
+          <div class="enum-column">DE_QUEUED</div>
+          <div class="enum-column">20</div>
+        </div>
+        <div class="enum-row">
+          <div class="enum-column">CONFERENCED</div>
+          <div class="enum-column">21</div>
+        </div>
+        <div class="enum-row">
+          <div class="enum-column">RONA</div>
+          <div class="enum-column">22</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="enum-set">
+      <h3 class="enum-heading">Agent States:</h3>
+      <div class="enum-table">
+        <div class="enum-row header">
+          <div class="enum-column"><strong>Enum</strong></div>
+          <div class="enum-column"><strong>Value</strong></div>
+        </div>
+        <!-- Enums for Agent States -->
+        <div class="enum-row">
+          <div class="enum-column">UNKNOWN</div>
+          <div class="enum-column">-1</div>
+        </div>
+        <div class="enum-row">
+          <div class="enum-column">LOGGEDOUT</div>
+          <div class="enum-column">0</div>
+        </div>
+        <div class="enum-row">
+          <div class="enum-column">LOGGEDIN</div>
+          <div class="enum-column">1</div>
+        </div>
+        <div class="enum-row">
+          <div class="enum-column">IDLE</div>
+          <div class="enum-column">2</div>
+        </div>
+        <div class="enum-row">
+          <div class="enum-column">ONBREAK</div>
+          <div class="enum-column">3</div>
+        </div>
+        <div class="enum-row">
+          <div class="enum-column">ASSIGNED</div>
+          <div class="enum-column">4</div>
+        </div>
+        <div class="enum-row">
+          <div class="enum-column">TALKING</div>
+          <div class="enum-column">5</div>
+        </div>
+        <div class="enum-row">
+          <div class="enum-column">WRAP</div>
+          <div class="enum-column">6</div>
+        </div>
+        <div class="enum-row">
+          <div class="enum-column">RESERVED</div>
+          <div class="enum-column">7</div>
+        </div>
+        <div class="enum-row">
+          <div class="enum-column">AGENT_AVAIL</div>
+          <div class="enum-column">15</div>
+        </div>
+        <div class="enum-row">
+          <div class="enum-column">ASL_EVENT</div>
+          <div class="enum-column">16</div>
+        </div>
+        <div class="enum-row">
+          <div class="enum-column">RR_RESOURCE_BUSY</div>
+          <div class="enum-column">17</div>
+        </div>
+        <div class="enum-row">
+          <div class="enum-column">NETWORK_OUT_OF_SERVICE</div>
+          <div class="enum-column">18</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+
 
   <script>
     $(document).ready(function () {
