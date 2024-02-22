@@ -39,7 +39,7 @@
             margin-bottom: 8px;
             color: #555;
         }
-        input {
+        input ,select{
             width: 100%;
             padding: 10px;
             margin-bottom: 15px;
@@ -90,6 +90,17 @@
         <!-- End time input -->
         <label for="end_time">End Time:</label>
         <input type="time" name="end_time" required>
+        <br>
+        <label for="timezone">Timezone:</label>
+        <select name="timezone" required>
+            <option value="Asia/Karachi">Asia/Karachi (Pakistan Standard Time)</option>
+            <option value="UTC">UTC (Coordinated Universal Time)</option>
+            <option value="Europe/Istanbul">Europe/Istanbul (Turkey Time)</option>
+            <option value="America/New_York">America/New_York (Eastern Time)</option>
+            <option value="America/Los_Angeles">America/Los_Angeles (Pacific Time)</option>
+            <option value="Europe/London">Europe/London (GMT)</option>
+            <option value="Australia/Sydney">Australia/Sydney (Australian Eastern Time)</option>
+        </select>
         <br>
         <input type="submit" value="Collect Stats from Database">
     </form>

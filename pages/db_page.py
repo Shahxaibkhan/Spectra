@@ -2,6 +2,8 @@ from flask import Flask, render_template, request
 from .base_page import BasePage
 import configparser
 import psycopg2
+from datetime import datetime
+import pytz
 
 
 
@@ -13,6 +15,7 @@ class DBPage(BasePage):
 
     def analyze(self):
         return render_template('db.html')
+
 
     def fetch_and_generate_report(self):
         db_details = self.fetch_db_details()
@@ -73,49 +76,24 @@ class DBPage(BasePage):
 
 
     def fetch_db_details(self):
-        if request.method == 'POST' and 'action' in request.form and request.form['action'] == "Connect & Generate Results":
-
+        if request.method == 'POST':
             lab = request.form.get('labSelect')
-            start_date = request.form.get('start_date')
-            start_time = request.form.get('start_time')
-            end_date = request.form.get('end_date')
-            end_time = request.form.get('end_time')
+            selected_timezone = request.form.get('timezone')
 
-            # Fetch lab details from the separate database config file
-            db_ip = self.db_config.get(lab, 'DB_IP')
-            db_port = self.db_config.get(lab, 'DB_PORT')
-            db_username = self.db_config.get(lab, 'DB_USERNAME')
-            db_password = self.db_config.get(lab, 'DB_PASSWORD')
-            db_name = self.db_config.get(lab, 'DB_DATABASE')
-
-            # print(f"Database Details: {db_ip}, {db_port}, {db_username}, {db_password}, {db_name}")
-            # print(f"Date and Time Details: Start Date: {start_date}, End Date: {end_date}, Start Time: {start_time}, End Time: {end_time}")
-
-            return {
-                'db_ip': db_ip,
-                'db_port': db_port,
-                'db_username': db_username,
-                'db_password': db_password,
-                'db_name': db_name,
-                'start_date': start_date,
-                'end_date': end_date,
-                'start_time': start_time,
-                'end_time': end_time
-            }
-        elif request.method == 'POST' :
-            
-            db_ip = request.form.get('db_ip')
-            db_port = request.form.get('db_port')
-            db_username = request.form.get('db_username')
-            db_password = request.form.get('db_password')
-            db_name = request.form.get('db_name')
-            start_date = request.form.get('start_date')  # Change this line to get the start date
-            end_date = request.form.get('end_date')  # Add this line to get the end date
-            start_time = request.form.get('start_time')
-            end_time = request.form.get('end_time')
-
-            # print(f"Database Details: {db_ip}, {db_port}, {db_username}, {db_password}, {db_name}")
-            # print(f"Date and Time Details: Start Date: {start_date}, End Date: {end_date}, Start Time: {start_time}, End Time: {end_time}")
+            if 'action' in request.form and request.form['action'] == "Connect & Generate Results":
+                db_ip, db_port, db_username, db_password, db_name = self.get_lab_details(lab)
+                start_date, end_date, start_time, end_time = self.get_utc_dates_times(request, selected_timezone)
+            else:
+                db_ip = request.form.get('db_ip')
+                db_port = request.form.get('db_port')
+                db_username = request.form.get('db_username')
+                db_password = request.form.get('db_password')
+                db_name = request.form.get('db_name')
+                start_date = request.form.get('start_date')
+                end_date = request.form.get('end_date')
+                start_time = request.form.get('start_time')
+                end_time = request.form.get('end_time')
+                start_date, end_date, start_time, end_time = self.get_utc_dates_times(request, selected_timezone)
 
             return {
                 'db_ip': db_ip,
@@ -128,14 +106,43 @@ class DBPage(BasePage):
                 'start_time': start_time,
                 'end_time': end_time
             }
-   
-        else:
-            return None
 
+    def get_lab_details(self, lab):
+        return (
+            self.db_config.get(lab, 'DB_IP'),
+            self.db_config.get(lab, 'DB_PORT'),
+            self.db_config.get(lab, 'DB_USERNAME'),
+            self.db_config.get(lab, 'DB_PASSWORD'),
+            self.db_config.get(lab, 'DB_DATABASE')
+        )
+
+    def get_utc_dates_times(self, request, selected_timezone):
+        start_date = request.form.get('start_date')
+        end_date = request.form.get('end_date')
+        start_time = request.form.get('start_time')
+        end_time = request.form.get('end_time')
+
+        if selected_timezone != 'UTC':
+            start_datetime_utc = self.convert_to_utc(f"{start_date} {start_time}", selected_timezone)
+            end_datetime_utc = self.convert_to_utc(f"{end_date} {end_time}", selected_timezone)
+
+            start_date = start_datetime_utc.strftime("%Y-%m-%d")
+            start_time = start_datetime_utc.strftime("%H:%M")
+            end_date = end_datetime_utc.strftime("%Y-%m-%d")
+            end_time = end_datetime_utc.strftime("%H:%M")
+
+        return start_date, end_date, start_time, end_time
+
+    def convert_to_utc(self, datetime_str, timezone):
+        # Convert a datetime string from a specific timezone to UTC
+        input_datetime = datetime.strptime(datetime_str, "%Y-%m-%d %H:%M")
+        input_timezone_obj = pytz.timezone(timezone)
+        input_datetime = input_timezone_obj.localize(input_datetime)
+        return input_datetime.astimezone(pytz.UTC)
 
     def fetch_sql_queries(self, start_date, end_date, start_time, end_time):
         queries = [
-                "select distinct tenant , tenant_id  from t_acdr WHERE call_time >= %s AND call_time <= %s LIMIT 2;",
+                "select distinct tenant , tenant_id  from t_acdr WHERE call_time >= %s AND call_time <= %s;",
                 "SELECT guid, tenant, tenant_id, ixn_id FROM t_acdr WHERE call_time >= %s AND call_time <= %s LIMIT 2;",
                 """SELECT TO_CHAR(call_time, 'YYYY-MM-DD HH24') AS hour1,
                     COUNT(ixn_id) AS "# of calls",
@@ -148,7 +155,7 @@ class DBPage(BasePage):
                     FROM afiniti.t_acdr
                     WHERE call_time >= %s AND call_time <= %s
                     GROUP BY hour1
-                    ORDER BY hour1 LIMIT 2""",
+                    ORDER BY hour1""",
                 "select count(*) as AG_LOG_COUNT from t_aglog ta WHERE event_time >= %s AND event_time <= %s;",
                 "select count(*) as CALL_QUEUE_LOG_COUNT from t_call_queue_log tcql WHERE event_time >= %s AND event_time <= %s;",
                 "select count(*) as ACDR_COUNT from t_acdr ta WHERE call_time >= %s AND call_time <= %s;",
