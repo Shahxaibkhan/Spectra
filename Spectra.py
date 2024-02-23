@@ -8,6 +8,7 @@ from pages.im_page import IMPage
 from pages.se_page import SEPage
 from pages.sfs_page import SFSPage
 from pages.db_page import DBPage
+from pages.acdss_page import ACDSSPage
 
 
 
@@ -17,6 +18,7 @@ im_page = IMPage(app)
 se_page = SEPage(app)
 sfs_page = SFSPage(app)
 db_page = DBPage(app)
+acdss_page = ACDSSPage(app)
 
 
 
@@ -360,6 +362,10 @@ def analyze_se():
 def analyze_sfs():
     return sfs_page.analyze() 
 
+@app.route('/analyze/acdss')
+def analyze_acdss():
+    return acdss_page.analyze() 
+
 
 @app.route('/upload-sfsse', methods=['POST'])
 def upload_sfsse():
@@ -379,6 +385,13 @@ def upload_im():
     elif action == 'Display Report':
         return im_page.generate_stats()
 
+
+@app.route('/display_acdss_report', methods=['POST'])
+def upload_acdss():
+    action = request.form['action']
+    print(action)
+    if action == 'Display Report':
+        return acdss_page.generate_stats()
         
 
 @app.route('/display_se_report', methods=['POST'])
