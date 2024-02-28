@@ -159,6 +159,7 @@ class DBPage(BasePage):
                 "select count(*) as AG_LOG_COUNT from t_aglog ta WHERE event_time >= %s AND event_time <= %s;",
                 "select count(*) as CALL_QUEUE_LOG_COUNT from t_call_queue_log tcql WHERE event_time >= %s AND event_time <= %s;",
                 "select count(*) as ACDR_COUNT from t_acdr ta WHERE call_time >= %s AND call_time <= %s;",
+                "select tenant, count(DISTINCT agent_id) AS DISTINCT_AGENT_COUNT FROM t_aglog ta WHERE event_time >= %s AND event_time <= %s GROUP BY tenant ORDER BY tenant",
                 "select count(distinct agent_id) DISTINCT_AGENT_COUNT from t_aglog ta WHERE event_time >= %s AND event_time <= %s;",
                 """select agent_state, count(*) agent_state_count from t_aglog ta 
                     WHERE event_time >= %s AND event_time <= %s
@@ -177,6 +178,7 @@ class DBPage(BasePage):
                 ['AG_LOG_COUNT'],  # AG LOG COUNT
                 ['CALL_QUEUE_LOG_COUNT'],  # CALL QUEUE LOG COUNT
                 ['ACDR_COUNT'],  # CDR COUNT
+                ['Tenant','DISTINCT_AGENT_COUNT'],  
                 ['DISTINCT_AGENT_COUNT'],  # TOTAL AGENT COUNT
                 ['agent_state', 'agent_state_count'],  # AGENT STATE WISE COUNT_DB
                 ['event_type', 'event_type_count']  # INTERACTION EVENT TYPE WISE COUNT_DB

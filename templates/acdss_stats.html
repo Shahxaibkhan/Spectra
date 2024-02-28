@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ACDSS - IM Statistics</title>
+  <title>ACDSS Statistics</title>
   <!-- Include jQuery -->
   <script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
   <!-- Include DataTables CSS and JS -->
@@ -72,6 +72,52 @@
 
     <h1><u>ACDSS Summary Report</u></h1>
 
+
+    <!-- Add new sections for additional reports -->
+    <div class="table-separator"></div>
+ 
+    <h1><u>No. Of Agents</u></h1>
+    <table id="tenantCountTable" class="display summary-table">
+      <thead>
+        <tr>
+          <th>TenantID</th>
+          <th>TotalAgents</th>
+        </tr>
+      </thead>
+      <tbody>
+        <!-- Replace the following lines with your data -->
+        {% for tenant_data in Tenant_Report %}
+        <tr>
+          <td>{{ tenant_data['TenantID'] }}</td>
+          <td>{{ tenant_data['TotalAgents'] }}</td>
+        </tr>
+        {% endfor %}
+        <!-- End of data -->
+      </tbody>
+    </table>
+
+    <div class="table-separator"></div>
+  
+    <h1><u>Agent Group Distribution</u></h1>
+    <table id="agentGroupCountTable" class="display summary-table">
+      <thead>
+        <tr>
+          <th>Agent Group</th>
+          <th>Total Agents</th>
+        </tr>
+      </thead>
+      <tbody>
+        <!-- Replace the following lines with your data -->
+        {% for agentgroup in Agent_Group_Report %}
+        <tr>
+          <td>{{ agentgroup['AgentGroup'] }}</td>
+          <td>{{ agentgroup['TotalAgents'] }}</td>
+        </tr>
+        {% endfor %}
+        <!-- End of data -->
+      </tbody>
+    </table>
+
     <div class="table-separator"></div>
 
     <h1><u>Call States Details</u></h1>
@@ -127,21 +173,18 @@
     </table>
 
     <div class="table-separator"></div>
-
-    <!-- Table 3: Agent ID Details -->
+<!-- 
     <h1><u>Agent ID Details</u></h1>
     <table id="agentIdStatesTable" class="display detailed-table">
     <thead>
         <tr>
-        <th>IXN ID</th>
+        <th>Agent ID</th>
         <th>Event Number</th>
         <th>Data Timestamp</th>
         <th>Aicore Timestamp</th>
-        <!-- Add more headers as needed -->
         </tr>
     </thead>
     <tbody>
-        <!-- Replace the following lines with your data -->
         {% for agent_id, agent_details in Agent_id_states.items() %}
         {% for agent_detail in agent_details %}
             <tr>
@@ -149,17 +192,14 @@
             <td>{{ agent_detail.agent_state }}</td>
             <td>{{ agent_detail.data_timestamp }}</td>
             <td>{{ agent_detail.aicore_tm }}</td>
-            <!-- Add more columns as needed -->
             </tr>
         {% endfor %}
         {% endfor %}
-        <!-- End of data -->
     </tbody>
     </table>
 
     <div class="table-separator"></div>
 
-    <!-- Table 2: IXN ID States -->
     <h1><u>IXN ID States Details</u></h1>
     <table id="ixnIdStatesTable" class="display detailed-table">
     <thead>
@@ -168,11 +208,9 @@
         <th>Event Number</th>
         <th>Data Timestamp</th>
         <th>Aicore Timestamp</th>
-        <!-- Add more headers as needed -->
         </tr>
     </thead>
     <tbody>
-        <!-- Replace the following lines with your data -->
         {% for ixn_id, events in ixn_id_states.items() %}
         {% for event in events %}
             <tr>
@@ -180,15 +218,12 @@
             <td>{{ event.call_event }}</td>
             <td>{{ event.data_timestamp }}</td>
             <td>{{ event.aicore_tm }}</td>
-            <!-- Add more columns as needed -->
             </tr>
         {% endfor %}
         {% endfor %}
-        <!-- End of data -->
     </tbody>
-    </table>
+    </table> -->
 
-  <!-- Include DataTables for both tables -->
   <script>
     $(document).ready(function () {
       // Initialize DataTable for the call events count table
@@ -196,7 +231,11 @@
       $('#agentStatesCountTable').DataTable();
       // Initialize DataTable for the IXN ID states table
       $('#ixnIdStatesTable').DataTable();
-      $('#agentIdStatesTable').DataTable();     
+      $('#tenantCountTable').DataTable();
+      $('#agentIdStatesTable').DataTable(); 
+      $('#agentGroupCountTable').DataTable();    
+
+      
     });
   </script>
 </body>
