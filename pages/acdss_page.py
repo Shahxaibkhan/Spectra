@@ -43,14 +43,21 @@ class ACDSSPage(BasePage):
         agent_state_sorted_logs = self.extract_and_sort_agent_state_logs(log_file)
         agent_state_count_named, agent_details = self.generate_agent_reports(agent_state_sorted_logs)
 
-        print("agent_details: ",agent_details)
-        # Use 'call_events_count' and 'ixn_id_states' as needed in your HTML template or further processing
+        tenant_report,agent_group_report, agent_details_report = self.extract_and_generate_reports(log_file)
+
+        # Use 'call_events_count', 'ixn_id_states', 'agent_state_count_named', 'agent_details',
+        # 'unique_agent_ids_count', 'tenant_report', 'agent_group_count', 'agent_group_report', 'agent_details_report'
+        # as needed in your HTML template or further processing
+        # print("agent_group_count: ",agent_group_count)
         return render_template(
             'acdss_stats.html',
             call_events_count=call_events_count,
             ixn_id_states=ixn_id_states,
             Agent_states_count=agent_state_count_named,
-            Agent_id_states=agent_details
+            Agent_id_states=agent_details,
+            Tenant_Report=tenant_report,
+            Agent_Group_Report=agent_group_report,
+            Agent_Details_Report=agent_details_report
         )
     
 
@@ -144,6 +151,7 @@ class ACDSSPage(BasePage):
     def generate_agent_reports(self, sorted_logs):
         agent_state_count = {}
         agent_details = {}
+        
 
         for log in sorted_logs:
             agent_id = log['agent_id']
@@ -152,18 +160,77 @@ class ACDSSPage(BasePage):
             # Update count for each agent state
             agent_state_count[agent_state] = agent_state_count.get(agent_state, 0) + 1
 
-            # Update detailed agent table
+          
+            # Update detailed agent table for each occurrence of agent_id
             agent_details.setdefault(agent_id, []).append({
                 'agent_state': agent_state,
                 'data_timestamp': log['data_timestamp'],
                 'aicore_tm': log['aicore_tm'],
             })
 
+            
+
         # Convert agent_state_count to named dictionary
         agent_state_count_named = {i: {'agent_state': i, 'state_enum': self.get_agent_state_enum(i), 'count': count}
                                 for i, count in sorted(agent_state_count.items())}
 
         return agent_state_count_named, agent_details
+
+    def extract_and_generate_reports(self, logs):
+        agent_info = {}
+        agent_group_info = {}
+
+        for log_line in logs:
+           if 'INFO:' in log_line:
+                match = re.search(r'ixn id : (\d+).*event_type: (\d+).*Tenant ID: (\d+).*channel: (\d+).*agent_id: (\d+).*calltype_id : (\d+).*direction : (-?\d+).*agentGroupID : (\d+)', log_line)
+                if match:
+                    ixn_id = int(match.group(1))
+                    event_type = int(match.group(2))
+                    tenant_id = int(match.group(3))
+                    channel = int(match.group(4))
+                    agent_id = int(match.group(5))
+                    calltype_id = int(match.group(6))
+                    direction = int(match.group(7))
+                    agent_group_id = int(match.group(8))
+
+                    # Update agent_info dictionary
+                    agent_info.setdefault((agent_id, tenant_id), {'tenant_id': tenant_id, 'agent_group_id': agent_group_id,
+                                                'event_type': event_type, 'direction': direction, 'calltype_id': calltype_id,
+                                                'channel': channel, 'agent_id': agent_id, 'ixn_id': ixn_id})
+
+                    # Update agent_group_info dictionary
+                    # Update agent_group_info dictionary
+                    agent_group_info.setdefault(agent_group_id, set()).add((agent_id, tenant_id))
+
+        # Generate reports
+        tenant_report = self.generate_tenant_report(agent_info)
+        agent_group_report = self.generate_agent_group_report(agent_group_info)
+        agent_details_report = self.generate_agent_details_report(agent_info)
+
+        return tenant_report, agent_group_report, agent_details_report
+
+
+    def generate_tenant_report(self, agent_info):
+        tenant_count = {}
+        for agent_id, info in agent_info.items():
+            tenant_id = info['tenant_id']
+            tenant_count[tenant_id] = tenant_count.get(tenant_id, 0) + 1
+
+        tenant_report = [{'TenantID': tenant_id, 'TotalAgents': count} for tenant_id, count in tenant_count.items()]
+        return tenant_report
+
+    def generate_agent_group_report(self, agent_group_info):
+        agent_group_report = [{'AgentGroup': group_id, 'TotalAgents': len(agent_ids)} for group_id, agent_ids in agent_group_info.items()]
+        return agent_group_report
+
+    def generate_agent_details_report(self, agent_info):
+        agent_details_report = [{'agent_id': agent_id, 'TenantID': info['tenant_id'],'EventType': info['event_type'],
+                                 'AgentGroupID': info['agent_group_id'], 'ixn_id': info['ixn_id'],
+                                 'Direction': info['direction'], 'CallTypeID': info['calltype_id'],
+                                 'Channel': info['channel']} for agent_id, info in agent_info.items()]
+        return agent_details_report
+
+
 
     def get_agent_state_enum(self, agent_state):
         return self.AGENT_STATES.get(agent_state, 'Others')
