@@ -1,8 +1,9 @@
-from flask import Flask, render_template, request
+from flask import Flask, render_template, request, jsonify
 from pages.im_page import IMPage
 from pages.se_page import SEPage
 from pages.sfs_page import SFSPage
 from pages.db_page import DBPage
+from pages.acdss_page import ACDSSPage
 import configparser
 
 app = Flask(__name__)
@@ -21,10 +22,14 @@ db_config.read('db_config.ini')
 im_page = IMPage(app)
 se_page = SEPage(app)
 sfs_page = SFSPage(app)
+acdss_page = ACDSSPage(app)
 db_page = DBPage(app,db_config)
+
 
 # Define a mapping of actions to corresponding page methods
 action_handlers = {
+    
+    'ACDSS': acdss_page.fetch_and_analyze_acdss_logs,
     'SE': se_page.fetch_and_analyze_se_logs,
     'SFS': sfs_page.fetch_and_analyze_sfs_logs,
     'IM': im_page.fetch_and_analyze_im_logs,

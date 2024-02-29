@@ -1,9 +1,10 @@
 # acdss_page.py
 import io, os, zipfile, re
+import json, tempfile
+from datetime import datetime
 from .base_page import BasePage
 from pages.ssh_handler import fetch_log_files
 from flask import Flask, render_template, request, send_file
-import json
 
 
 
@@ -31,6 +32,57 @@ class ACDSSPage(BasePage):
     def analyze(self):
         # Implement IM analysis logic here
         return render_template('acdss.html')
+
+    def fetch_and_analyze_acdss_logs(self, selected_ips, logs_path, username, password):
+        all_logs_content = []  # List to store log lines from all selected IPs
+
+        # Iterate over selected IPs
+        for host in selected_ips:
+            try:
+                log_files_content = self.fetch_acdss_logs(host, logs_path, username, password)
+
+                if log_files_content:
+                    all_logs_content.extend(log_files_content)
+            except Exception as e:
+                print(f"Failed to fetch logs from {host}: {e}")
+
+        if all_logs_content:
+            # Create a temporary file to store all logs
+            with tempfile.NamedTemporaryFile(mode='w+', delete=False, encoding='utf-8') as temp_file:
+                try:
+                    # Write all logs to the temporary file
+                    temp_file.writelines(all_logs_content)
+
+                    # Move the file cursor to the beginning for reading
+                    temp_file.seek(0)
+
+                    # Read the content into a list
+                    logfile = temp_file.readlines()
+
+                    # Pass the list of log lines to the analysis method
+                    return self.generate_acdss_stats(logfile)
+                except Exception as e:
+                    print(f"Error processing logs: {e}")
+        else:
+            print("No logs fetched from any machine.")
+            return None
+
+    def fetch_acdss_logs(self,host, logs_path, username, password):
+        logs_path = logs_path.rstrip('/')  # Remove trailing slash if present
+        logs_path = f"{logs_path}/acdss/"  # Append "/script_executor/"
+        
+        logs = fetch_log_files(host, username, password, logs_path)
+
+        if logs is not None:
+            print("Logs Found")
+            print("-" * 50)
+            return logs
+        else:
+            print("Failed to fetch logs. Check SSH connection.")
+            return None
+
+    def generate_acdss_stats(self,logfile):
+        return self.generate_acdss_stats(log_file)
 
     def generate_stats(self):
         log_file = self.file_upload_and_processing_logs()
