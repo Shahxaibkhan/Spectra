@@ -89,13 +89,13 @@ class ACDSSPage(BasePage):
         return self.generate_acdss_stats(log_file)
 
     def generate_acdss_stats(self, log_file):
-        call_state_sorted_logs = self.extract_and_sort_call_event_logs(log_file)
-        call_events_count, ixn_id_states = self.generate_call_events_reports(call_state_sorted_logs)
+        # call_state_sorted_logs = self.extract_and_sort_call_event_logs(log_file)
+        # call_events_count, ixn_id_states = self.generate_call_events_reports(call_state_sorted_logs)
 
         agent_state_sorted_logs = self.extract_and_sort_agent_state_logs(log_file)
         agent_state_count_named, agent_details = self.generate_agent_reports(agent_state_sorted_logs)
 
-        tenant_report,agent_group_report, agent_details_report = self.extract_and_generate_reports(log_file)
+        tenant_report,agent_group_report, agent_details_report, call_events_count, ixn_id_states = self.extract_and_generate_reports(log_file)
 
         # Use 'call_events_count', 'ixn_id_states', 'agent_state_count_named', 'agent_details',
         # 'unique_agent_ids_count', 'tenant_report', 'agent_group_count', 'agent_group_report', 'agent_details_report'
@@ -134,48 +134,27 @@ class ACDSSPage(BasePage):
 
         return log_file
 
-    def extract_and_sort_call_event_logs(self, logs):
-        extracted_logs = []
-        for log_line in logs:
-            match = re.search(r'call_event:(\d+)\|\[1\]ixn_id:(\d+)\|.*data_timestamp:(\d+)\|aicore_tm:(\d+)', log_line)
-            if match:
-                call_event = int(match.group(1))
-                ixn_id = int(match.group(2))
-                data_timestamp = int(match.group(3))
-                aicore_tm = int(match.group(4))
-                extracted_logs.append({
-                    'call_event': call_event,
-                    'ixn_id': ixn_id,
-                    'data_timestamp': data_timestamp,
-                    'aicore_tm': aicore_tm,
-                })
+    # def extract_and_sort_call_event_logs(self, logs):
+    #     extracted_logs = []
+    #     for log_line in logs:
+    #         match = re.search(r'call_event:(\d+)\|\[1\]ixn_id:(\d+)\|.*data_timestamp:(\d+)\|aicore_tm:(\d+)', log_line)
+    #         if match:
+    #             call_event = int(match.group(1))
+    #             ixn_id = int(match.group(2))
+    #             data_timestamp = int(match.group(3))
+    #             aicore_tm = int(match.group(4))
+    #             extracted_logs.append({
+    #                 'call_event': call_event,
+    #                 'ixn_id': ixn_id,
+    #                 'data_timestamp': data_timestamp,
+    #                 'aicore_tm': aicore_tm,
+    #             })
 
-        # Sort the logs based on ixn_id
-        sorted_logs = sorted(extracted_logs, key=lambda x: x['ixn_id'])
-        return sorted_logs
+    #     # Sort the logs based on ixn_id
+    #     sorted_logs = sorted(extracted_logs, key=lambda x: x['ixn_id'])
+    #     return sorted_logs
 
-    def generate_call_events_reports(self, sorted_logs):
-        call_events_count = {}
-        ixn_id_states = {}
-
-        for log in sorted_logs:
-            ixn_id = log['ixn_id']
-            call_event = log['call_event']
-
-           # Update count for each call event
-            call_events_count[call_event] = call_events_count.get(call_event, 0) + 1
-
-            # Update detailed event table
-            ixn_id_states.setdefault(ixn_id, []).append({
-                'call_event': call_event,
-                'data_timestamp': log['data_timestamp'],
-                'aicore_tm': log['aicore_tm'],
-            })
-
-         # Create call_events_count_named dynamically without specifying desired_order
-        call_events_count_named = {i: {'event_number': i, 'event_name': self.get_event_name(i), 'count': count} for i, count in sorted(call_events_count.items())}
-
-        return call_events_count_named, ixn_id_states
+    
 
     def extract_and_sort_agent_state_logs(self, logs):
         extracted_logs = []
@@ -230,10 +209,11 @@ class ACDSSPage(BasePage):
 
     def extract_and_generate_reports(self, logs):
         agent_info = {}
+        call_events_count = {}
         agent_group_info = {}
 
         for log_line in logs:
-           if 'INFO:' in log_line:
+           if 'INFO:' in log_line and 'mega_ixn_log::ixn_control_loop' in log_line:
                 match = re.search(r'ixn id : (\d+).*event_type: (\d+).*Tenant ID: (\d+).*channel: (\d+).*agent_id: (\d+).*calltype_id : (\d+).*direction : (-?\d+).*agentGroupID : (\d+)', log_line)
                 if match:
                     ixn_id = int(match.group(1))
@@ -245,12 +225,15 @@ class ACDSSPage(BasePage):
                     direction = int(match.group(7))
                     agent_group_id = int(match.group(8))
 
+                    # Update count for each call event
+                    call_events_count[event_type] = call_events_count.get(event_type, 0) + 1
+
                     # Update agent_info dictionary
                     agent_info.setdefault((agent_id, tenant_id), {'tenant_id': tenant_id, 'agent_group_id': agent_group_id,
                                                 'event_type': event_type, 'direction': direction, 'calltype_id': calltype_id,
                                                 'channel': channel, 'agent_id': agent_id, 'ixn_id': ixn_id})
 
-                    # Update agent_group_info dictionary
+                    
                     # Update agent_group_info dictionary
                     agent_group_info.setdefault(agent_group_id, set()).add((agent_id, tenant_id))
 
@@ -258,8 +241,33 @@ class ACDSSPage(BasePage):
         tenant_report = self.generate_tenant_report(agent_info)
         agent_group_report = self.generate_agent_group_report(agent_group_info)
         agent_details_report = self.generate_agent_details_report(agent_info)
+        # Create call_events_count_named dynamically without specifying desired_order
+        call_events_count_named = {i: {'event_number': i, 'event_name': self.get_event_name(i), 'count': count} for i, count in sorted(call_events_count.items())}
 
-        return tenant_report, agent_group_report, agent_details_report
+        return tenant_report, agent_group_report, agent_details_report,call_events_count_named, None
+
+    # def generate_call_events_reports(self, sorted_logs):
+    #     call_events_count = {}
+    #     ixn_id_states = {}
+
+    #     for log in sorted_logs:
+    #         ixn_id = log['ixn_id']
+    #         call_event = log['call_event']
+
+    #        # Update count for each call event
+    #         call_events_count[call_event] = call_events_count.get(call_event, 0) + 1
+
+    #         # Update detailed event table
+    #         ixn_id_states.setdefault(ixn_id, []).append({
+    #             'call_event': call_event,
+    #             'data_timestamp': log['data_timestamp'],
+    #             'aicore_tm': log['aicore_tm'],
+    #         })
+
+    #      # Create call_events_count_named dynamically without specifying desired_order
+    #     call_events_count_named = {i: {'event_number': i, 'event_name': self.get_event_name(i), 'count': count} for i, count in sorted(call_events_count.items())}
+
+    #     return call_events_count_named, ixn_id_states
 
 
     def generate_tenant_report(self, agent_info):
@@ -289,10 +297,10 @@ class ACDSSPage(BasePage):
 
     def get_event_name(self, event_number):
         event_names = {
-            0: 'UNKNOWN', 1: 'OFFERED', 2: 'ROUTE_REQUESTED', 3: 'ROUTE_SELECTED',
-            4: 'ROUTE_TIMEOUT', 5: 'RINGING', 6: 'CONNECTED', 7: 'DISCONNECTED',
-            8: 'TERMINATED', 9: 'HELD', 10: 'RESUMED', 11: 'ROUTE_ENDED', 12: 'TRANSFERRED',
-            20: 'DE_QUEUED', 21: 'CONFERENCED', 22: 'RONA'
+            -1: 'UNKNOWN', 0: 'OFFERED', 1: 'QUEUED', 2: 'CONNECTED',
+            3: 'ENDED', 4: 'TERMINATED', 5: 'NUMBER_OF_EVENT_TYPES',
+            6: 'ROUTE_ENDED', 7: 'RINGING', 8: 'RONA', 9: 'ROUTE_REQUEST',
+            10: 'DEQUEUE'
         }
         return event_names.get(event_number, 'Others')
 

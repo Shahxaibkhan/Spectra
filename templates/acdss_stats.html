@@ -197,32 +197,7 @@
         {% endfor %}
     </tbody>
     </table>
-
-    <div class="table-separator"></div>
-
-    <h1><u>IXN ID States Details</u></h1>
-    <table id="ixnIdStatesTable" class="display detailed-table">
-    <thead>
-        <tr>
-        <th>IXN ID</th>
-        <th>Event Number</th>
-        <th>Data Timestamp</th>
-        <th>Aicore Timestamp</th>
-        </tr>
-    </thead>
-    <tbody>
-        {% for ixn_id, events in ixn_id_states.items() %}
-        {% for event in events %}
-            <tr>
-            <td>{{ ixn_id }}</td>
-            <td>{{ event.call_event }}</td>
-            <td>{{ event.data_timestamp }}</td>
-            <td>{{ event.aicore_tm }}</td>
-            </tr>
-        {% endfor %}
-        {% endfor %}
-    </tbody>
-    </table> -->
+-->
 
   <script>
     $(document).ready(function () {
@@ -230,7 +205,7 @@
       $('#callEventsCountTable').DataTable();
       $('#agentStatesCountTable').DataTable();
       // Initialize DataTable for the IXN ID states table
-      $('#ixnIdStatesTable').DataTable();
+      // $('#ixnIdStatesTable').DataTable();
       $('#tenantCountTable').DataTable();
       $('#agentIdStatesTable').DataTable(); 
       $('#agentGroupCountTable').DataTable();    
