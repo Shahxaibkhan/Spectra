@@ -4,6 +4,7 @@ import io
 import re
 import tempfile
 from datetime import datetime
+import zipfile
 
 app = Flask(__name__)
 
@@ -54,13 +55,15 @@ def upload_log():
 
     unified_logs = process_logs(log_files, log_level)
 
-    output_log = io.BytesIO()
+    output_zip = io.BytesIO()
 
-    for log in unified_logs:
-        output_log.write((log + '\n').encode())
+    with zipfile.ZipFile(output_zip, 'w') as zipf:
+        for index, log in enumerate(unified_logs):
+            zipf.writestr(f'unified_log_{index}.log', log)
 
-    output_log.seek(0)
-    return send_file(output_log, as_attachment=True, download_name='unified_logs.log')
+    output_zip.seek(0)
+    return send_file(output_zip, as_attachment=True, download_name='unified_logs.zip')
+
 
 if __name__ == '__main__':
-    app.run(debug=True, port=8000)
+    app.run(debug=True, port=2000)
