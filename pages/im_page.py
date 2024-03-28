@@ -89,8 +89,8 @@ class IMPage(BasePage):
             print("Failed to fetch logs. Check SSH connection.")
             return None
 
-    def generate_ixn_stats(self,log_file,ixn):
-        return self.generate_summary_report(log_file,ixn)
+    def generate_ixn_stats(self,log_file,ixn,tenant):
+        return self.generate_summary_report(log_file,ixn,tenant)
 
     def generate_im_stats(self,log_file):
         # Generate summary report
@@ -103,12 +103,12 @@ class IMPage(BasePage):
             im_sfs_summary_data=summary_data['im_sfs_summary_data']
         )
 
-    def generate_summary_report(self,logs, ixn=None):
-        im_ams_jsonLogs = self.fetch_im_ams_json_logs(logs,ixn)
+    def generate_summary_report(self,logs, ixn=None, tenant=None):
+        im_ams_jsonLogs = self.fetch_im_ams_json_logs(logs,ixn,tenant)
         im_ams_event_details = self.fetch_im_ams_event_details(im_ams_jsonLogs)
         im_ams_processing_details = self.fetch_im_ams_processing_details(im_ams_event_details['paired_events'])
 
-        im_sfs_jsonLogs = self.fetch_im_sfs_json_logs(logs,ixn)
+        im_sfs_jsonLogs = self.fetch_im_sfs_json_logs(logs,ixn,tenant)
     
 
         # Call the sfs_im_events_processing function to get imEvents_data
@@ -350,12 +350,12 @@ class IMPage(BasePage):
             return None  # If no corresponding receiving event found
 
 
-    def fetch_im_ams_json_logs(self,log_file, ixn=None):
-        sorted_im_ams_logs = self.fetch_im_ams_sorted_logs(log_file, ixn)
+    def fetch_im_ams_json_logs(self,log_file, ixn=None, tenant=None):
+        sorted_im_ams_logs = self.fetch_im_ams_sorted_logs(log_file, ixn,tenant)
         return self.convert_im_ams_logs_to_json(sorted_im_ams_logs)
 
-    def fetch_im_sfs_json_logs(self,log_file, ixn=None):
-        sorted_im_sfs_logs = self.fetch_im_sfs_sorted_logs(log_file,ixn)
+    def fetch_im_sfs_json_logs(self,log_file, ixn=None, tenant=None):
+        sorted_im_sfs_logs = self.fetch_im_sfs_sorted_logs(log_file,ixn,tenant)
         return self.convert_im_sfs_logs_to_json(sorted_im_sfs_logs)
 
     def convert_im_sfs_logs_to_json(self, sorted_logs):
@@ -484,10 +484,7 @@ class IMPage(BasePage):
             'event_occurrences': event_occurrences,
         }
 
-        jsonLogs = json.dumps(result_data, indent=2)
-        output_file_path = "ams_output.json"
-        with open(output_file_path, 'w') as output_file:
-            output_file.write(jsonLogs)
+       
         return result_data
 
 
@@ -582,8 +579,8 @@ class IMPage(BasePage):
          
 
 
-    def fetch_im_ams_sorted_logs(self,log_file, ixn=None):
-        parsed_log_file = [self.parse_im_ams_logs(log, ixn) for log in log_file if self.parse_im_ams_logs(log,ixn) is not None]
+    def fetch_im_ams_sorted_logs(self,log_file, ixn=None, tenant=None):
+        parsed_log_file = [self.parse_im_ams_logs(log, ixn,tenant) for log in log_file if self.parse_im_ams_logs(log,ixn,tenant) is not None]
 
         # Check if any logs were parsed
         if not parsed_log_file:
@@ -594,8 +591,8 @@ class IMPage(BasePage):
 
         return sorted_logs
 
-    def fetch_im_sfs_sorted_logs(self, log_file, ixn=None):
-        parsed_log_file = [result for log in log_file if (result := self.parse_im_sfs_logs(log,ixn)) is not None]
+    def fetch_im_sfs_sorted_logs(self, log_file, ixn=None, tenant=None):
+        parsed_log_file = [result for log in log_file if (result := self.parse_im_sfs_logs(log,ixn,tenant)) is not None]
 
         # Check if any logs were parsed
         if not parsed_log_file:
@@ -703,12 +700,13 @@ class IMPage(BasePage):
 
 
 
-    def parse_im_ams_logs(self,log, ixn=None):
+    def parse_im_ams_logs(self,log, ixn=None, tenant=None):
         match = re.search(r'(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2},\d+) +\d+ +DEBUG: \[ {tenant:(\d+), ixn:(\d+)} \[im\.flow\] (<-|->) ams: (.+?)\]~~', log)
 
         if match:
             ixn_id = match.group(3)
-            if ixn is None or ixn_id == str(ixn):
+            tenant_id = match.group(2)
+            if ixn is None or (ixn_id == str(ixn) and tenant_id== str(tenant)):
                 timestamp = match.group(1)
                 tenant_id = match.group(2)
                 
@@ -746,7 +744,7 @@ class IMPage(BasePage):
         return None
 
 
-    def parse_im_sfs_logs(self, log, ixn=None):
+    def parse_im_sfs_logs(self, log, ixn=None, tenant=None):
         match = re.search(r'(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2},\d+) +\d+ +DEBUG: \[ {tenant:(\d+), ixn:(\d+)(?:, (agent|extrunk|supervisor): *(\d+))?} \[im\.flow\] (<-|->) client: (.+?)\]~~', log)
 
         if match:

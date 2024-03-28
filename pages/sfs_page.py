@@ -94,11 +94,11 @@ class SFSPage(BasePage):
             print("Failed to fetch logs. Check SSH connection.")
             return None
 
-    def generate_sfs_ixn_stats(self,log_file):
-        return self.generate_ixn_stats(log_file)
+    # def generate_sfs_ixn_stats(self,log_file):
+    #     return self.generate_ixn_stats(log_file)
     
-    def generate_ixn_stats(self,log_file,ixn):
-        sorted_logs = self.call_processed_logs(log_file,ixn)
+    def generate_ixn_stats(self,log_file,ixn,tenant):
+        sorted_logs = self.call_processed_logs(log_file,ixn,tenant)
         # Convert logs to JSON
         logs_json = self.convert_sfsim_logs_to_json(sorted_logs)
 
@@ -589,8 +589,8 @@ class SFSPage(BasePage):
         return json_string
 
 
-    def call_processed_logs(self, log_file, ixn=None):
-        parsed_log_file = [result for log in log_file if (result := self.parse_sfsim_logs(log, ixn)) is not None]
+    def call_processed_logs(self, log_file, ixn=None, tenant=None):
+        parsed_log_file = [result for log in log_file if (result := self.parse_sfsim_logs(log, ixn, tenant)) is not None]
         
         if not parsed_log_file:
             # Handle the case when no logs were parsed
@@ -658,7 +658,7 @@ class SFSPage(BasePage):
 
   
 
-    def parse_sfsim_logs(self, log, ixn=None):
+    def parse_sfsim_logs(self, log, ixn=None, tenant=None):
         result = {}
 
         pattern = re.compile(r'(?P<timestamp>\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2},\d{6})\s+(?P<log_level>\d+)\s+DEBUG:\s+\[\s+{tenant:(?P<tenant_id>\d+),\s+ixn:(?P<ixn_id>\d+)(?:,\s+(?P<agent_type>agent|extrunk|supervisor): *(?P<agent_value>\d+))?.*?\]\s+(?P<arrow><-|->)\s+im:\s+(?P<event>\w+)\s+\(header:(?P<header>[^~]+)\)\s.*?~~')
@@ -672,11 +672,11 @@ class SFSPage(BasePage):
 
         if match:
             ixn_id = match.group('ixn_id')
+            tenant_id = match.group('tenant_id')
 
             # Check if ixn parameter is provided and ixn_id matches it
-            if ixn is None or ixn_id == str(ixn):
+            if ixn is None or (ixn_id == str(ixn) and tenant_id == str(tenant)):
                 timestamp = match.group('timestamp')
-                tenant_id = match.group('tenant_id')
                 ixn_id = ixn if ixn else match.group('ixn_id')
                 agent_type = match.group('agent_type')
                 agent_value = match.group('agent_value')
