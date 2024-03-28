@@ -23,7 +23,7 @@ class IXNPage(BasePage):
     def displayDetails(self):
         try:
             # Get IXN ID and uploaded log files
-            ixn_id, sfs_file, im_file, se_file, acdss_file = self.get_uploaded_files_and_ixn_id()
+            ixn_id,tenant_id, sfs_file, im_file, se_file, acdss_file = self.get_uploaded_files_and_ixn_id()
 
             # Process each log file
             sfs_loglines = self.process_log_file(sfs_file)
@@ -39,9 +39,9 @@ class IXNPage(BasePage):
             if not all([im_loglines, se_loglines, acdss_loglines]):
                 self.logger.warning("One or more log files are missing or empty")
 
-            sfs_summary_data, sfs_detailed_summary = self.sfs_page.generate_ixn_stats(sfs_loglines, ixn_id)
-            se_vector_stats, se_total_vectors = self.se_page.generate_ixn_stats(se_loglines, ixn_id)
-            im_summary = self.im_page.generate_ixn_stats(im_loglines, ixn_id)
+            sfs_summary_data, sfs_detailed_summary = self.sfs_page.generate_ixn_stats(sfs_loglines, ixn_id,tenant_id)
+            se_vector_stats, se_total_vectors = self.se_page.generate_ixn_stats(se_loglines, ixn_id, tenant_id)
+            im_summary = self.im_page.generate_ixn_stats(im_loglines, ixn_id,tenant_id)
             # Debugging: Print summary data
             # print("im_summary", im_summary)
 
@@ -57,6 +57,7 @@ class IXNPage(BasePage):
            
 
             return render_template('ixn_stats.html',
+             tenant=tenant_id,
              ixn=ixn_id,
              sfs_summary=sfs_summary,
              se_summary= se_summary,
@@ -84,8 +85,9 @@ class IXNPage(BasePage):
                                    message="An error occurred while displaying IXN details. Please try again later.")
 
     def get_uploaded_files_and_ixn_id(self):
-        # Retrieve IXN ID from the request
+        # Retrieve IXN and Tenent ID from the request
         ixn_id = request.form['ixn_id']
+        tenant_id = request.form['tenant_id']
 
         # Retrieve uploaded log files
         sfs_file = request.files.get('sfs_file')  # Use get method to handle missing file gracefully
@@ -94,7 +96,7 @@ class IXNPage(BasePage):
         acdss_file = request.files.get('acdss_file')  # Use get method to handle missing file gracefully
 
         # Return the IXN ID and uploaded log files
-        return ixn_id, sfs_file, im_file, se_file, acdss_file
+        return ixn_id,tenant_id, sfs_file, im_file, se_file, acdss_file
 
     def process_log_file(self, file):
         loglines = []

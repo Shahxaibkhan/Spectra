@@ -107,8 +107,8 @@ class SEPage(BasePage):
         # Return the generated summary report to be displayed in the HTML template
         return render_template('se_stats.html', summary_report=summary_report)
   
-    def generate_ixn_stats(self,log_file,ixn):
-        vector_stats = self.generate_vector_stats(log_file,ixn)
+    def generate_ixn_stats(self,log_file,ixn,tenant):
+        vector_stats = self.generate_vector_stats(log_file,ixn,tenant)
 
         # Extract unique vector_ids from vector_stats and count occurrences
         vector_id_counts = {}
@@ -605,9 +605,9 @@ class SEPage(BasePage):
         return vector_stats
 
 
-    def generate_vector_stats(self,log_file, ixn=None):
+    def generate_vector_stats(self,log_file, ixn=None, tenant=None):
         # Get processed logs
-        sorted_logs = self.vectors_processed_logs(log_file, ixn)
+        sorted_logs = self.vectors_processed_logs(log_file, ixn, tenant)
 
         vector_stats = []
 
@@ -615,7 +615,7 @@ class SEPage(BasePage):
         vector_statistics = {}
 
         for log in sorted_logs:
-            key = f"{log['call_id']}_{log['vector_id']}"
+            key = f"{log['tenant_id']}_{log['call_id']}_{log['vector_id']}"
             
             if key not in vector_statistics:
                 vector_statistics[key] = {
@@ -684,23 +684,34 @@ class SEPage(BasePage):
                 'execution_time': execution_time
             })
 
-        # Convert the dictionary to a JSON object
-        logs_json = json.dumps(logs_by_call_vector, indent=2)
+        # # Convert the dictionary to a JSON object
+        # logs_json = json.dumps(logs_by_call_vector, indent=2)
+        
+        # output_file_path = "se_output.json"
+        # with open(output_file_path, 'w') as output_file:
+        #     output_file.write(logs_json)
 
         return logs_json
 
 
-    def vectors_processed_logs(self,log_file, ixn=None):
+    def vectors_processed_logs(self,log_file, ixn=None, tenant=None):
             
 
-            parsed_vector_logs = [result for log in log_file if (result := self.parse_vector_log(log, ixn)) is not None]
+            parsed_vector_logs = [result for log in log_file if (result := self.parse_vector_log(log, ixn, tenant)) is not None]
 
             # Check if any logs were parsed
             if not parsed_vector_logs:
                 # Handle the case when no logs were parsed
                 return []
 
-            sorted_logs = sorted(parsed_vector_logs, key=lambda x: (x['call_id'],x['vector_id'], x['timestamp'], x['execution_index'], x['tenant_id']))
+            sorted_logs = sorted(parsed_vector_logs, key=lambda x: (x['call_id'],x['vector_id'],x['tenant_id'], x['timestamp'], x['execution_index']))
+
+            # logs_json = json.dumps(sorted_logs, indent=2)
+            
+            # output_file_path = "se_output.json"
+            # with open(output_file_path, 'w') as output_file:
+            #  output_file.write(logs_json)
+
 
             
             return sorted_logs
@@ -741,7 +752,7 @@ class SEPage(BasePage):
 
 
 
-    def parse_vector_log(self,log, ixn=None):
+    def parse_vector_log(self,log, ixn=None, tenant=None):
             search_pattern = r'(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2},\d{3}) \[\d+\]  DEBUG: \[ VectorScript::executeVectorSteps: > Time taken for script execution:(\d+) usecs\. CallID:(\d+\|\d+\.\d+\.\d+), VecID:(\d+\|\d+\.\d+\.\d+), isLastStep:(true|false), executionIndex:(\d+) \]~~'
             log_pattern = re.compile(search_pattern)
             logpattern_match = log_pattern.search(log)
@@ -751,7 +762,7 @@ class SEPage(BasePage):
                 call_id_tenant_str = logpattern_match.group(3)
                 result["tenant_id"], result["call_id"] = map(int, call_id_tenant_str.split('|')[1].split('.')[0:3:2])
                 
-                if ixn is None or result["call_id"] == int(ixn):
+                if ixn is None or (result["call_id"] == int(ixn) and result["tenant_id"] == int(tenant) ):
                 
 
                     result["matched_string"] = logpattern_match.group()
