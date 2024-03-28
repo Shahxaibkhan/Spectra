@@ -1,0 +1,608 @@
+<!DOCTYPE html>
+<html lang="en">
+
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>S.P.E.C.T.R.A. - IXN Statistics</title>
+    <!-- Include CSS frameworks like Bootstrap for styling -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <!-- Include Font Awesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <!-- Include custom CSS for styling -->
+    <link rel="stylesheet" href="styles.css">
+    
+    <style>
+      body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f4f4f4;
+            text-align: center;
+            padding: 20px;
+            margin: 0; /* Add margin to reset the default margin */
+        }
+          /* New style for the footer */
+          footer {
+            background-color: maroon;
+            color: white;
+            padding: 10px;
+            position: fixed;
+            bottom: 0;
+            left: 0; /* Align the left edge with the left edge of the viewport */
+            width: 100%; /* Make the footer full width */
+            box-sizing: border-box; /* Include padding and border in the total width */
+          }
+          table.table-striped.table-bordered thead th {
+                
+                color: maroon; /* Set the color to maroon */
+                
+            }
+            /* Update table body background color */
+       
+          .card-header {
+                font-weight: bold; /* Make the text bold */
+                background-color: maroon;
+                color: white;
+                
+            }
+
+          h1 {
+            margin-top: 20px;
+            color: #800000;
+            margin-bottom: 20px;
+          }
+          
+          .table-separator {
+            border-top: 4px solid #800000;
+            margin-top: 20px;
+            margin-bottom: 20px;
+          }
+          /* Custom CSS for styling the navbar */
+          .navbar {
+              background-color: maroon !important; /* Set the background color to maroon */
+          }
+
+          /* Update the text color of the navbar links */
+          .navbar-nav .nav-link {
+              color: white !important; /* Set the text color to white */
+          }
+  </style>
+
+
+  </head>
+  <body>
+
+    
+  <h1><u> IXN - {{ixn}} - Summary Report</u></h1>
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+      <a class="navbar-brand" href="#">IXN Dashboard</a>
+      <!-- Add more navigation links as needed -->
+      <div class="collapse navbar-collapse" id="navbarNav">
+        <ul class="navbar-nav ml-auto">
+          <li class="nav-item">
+            <a class="nav-link" href="#summaryTable">Summary</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="#interactionTable">SFS / IM</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="#IMAMS">IM-AMS</a>
+          </li>
+        <!-- Add more navigation links for other sections -->
+        </ul>
+      </div>
+    </nav>
+
+  <!-- Main Content -->
+  <div class="container-fluid mt-4">
+
+    <div class="row">
+      <!-- Summary Section -->
+      <div class="col-lg-6 mb-1">
+        <div class="card">
+          <div class="card-header">
+          Summary
+          </div>
+          <div class="card-body">
+            <div class="table-responsive"> 
+              <table id="IM-AMS" class="table table-striped table-bordered">
+                <thead>
+                  <tr>
+                    <th>Statistic</th>
+                    <th>Value</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% set unique_ixns = [] %}
+                  {% set unique_tenants = [] %}
+                  {% for detail in sfs_summary.detailed_summary %}
+                    {% if detail.ixn_id not in unique_ixns %}
+                      <tr>
+                        <td>IXN ID</td>
+                        <td>{{ detail.ixn_id }}</td>
+                      </tr>
+                      {% set _ = unique_ixns.append(detail.ixn_id) %}
+                    {% endif %}
+                    {% if detail.tenant_id not in unique_tenants %}
+                      <tr>
+                        <td>Tenant ID</td>
+                        <td>{{ detail.tenant_id }}</td>
+                      </tr>
+                      {% set _ = unique_tenants.append(detail.tenant_id) %}
+                    {% endif %}
+                    
+                  <tr>
+                    <td>Transfer Scenario</td>
+                    <td>{% if sfs_summary.summary_data.transfer_scenarios %}True{% else %}False{% endif %}</td>
+                  </tr>
+                  <tr>
+                      <td>Conference Case</td>
+                      <td>{% if sfs_summary.summary_data.conference_cases %}True{% else %}False{% endif %}</td>
+                  </tr>
+                  <tr>
+                      <td>SO Case</td>
+                      <td>{% if sfs_summary.summary_data.so_cases %}True{% else %}False{% endif %}</td>
+                  </tr>
+                  <tr>
+                    <td>SFS - IM Missing Responses </td>
+                    <td>{{ sfs_summary.summary_data.events_without_receiving }}</td>
+                  </tr>
+                  <tr>
+                    <td>IM - SFS Missing Responses </td>
+                    <td>{{ im_summary.im_sfs_summary_data.events_without_receiving }}</td>
+                  </tr>
+                  <tr>
+                    <td>Interactions-Flows Executed </td>
+                    <td>{{ se_summary.total_vectors }}</td>
+                  </tr>
+                  <tr>
+                    <td>No. of Duplicate Events</td>
+                    <td>{{ detail.duplicate_events }}</td>
+                  </tr>
+                  <tr>
+                    <td>Notify Dropout</td>
+                    <td>{{ detail.notify_dropout }}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="col-lg-6 mb-3">
+        <div class="card">
+          <div class="card-header">
+            IXN and Interaction Flow Details
+          </div>
+          <div class="card-body">
+            <div class="table-responsive">
+              <table class="table table-striped table-bordered">
+                <thead>
+                  <tr>
+                    <th>Detail</th>
+                    <th>Value</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <!-- IXN Details -->
+                  {% for detail in sfs_summary.detailed_summary %}
+                    <tr>
+                      <td>No. of Agents</td>
+                      <td>{{ detail.no_of_agents }}</td>
+                    </tr>
+                    
+                    <tr>
+                      <td>Agent IDs</td>
+                      <td>
+                        {% if detail.tenant_id in sfs_summary.summary_data.agent_ids and detail.ixn_id in sfs_summary.summary_data.agent_ids[detail.tenant_id] %}
+                          {{ sfs_summary.summary_data.agent_ids[detail.tenant_id][detail.ixn_id] }}
+                        {% else %}
+                          N/A
+                        {% endif %}
+                      </td>
+                    </tr>
+                    <tr>
+                      <td>Trunk IDs</td>
+                      <td>
+                        {% if detail.tenant_id in sfs_summary.summary_data.trunk_ids and detail.ixn_id in sfs_summary.summary_data.trunk_ids[detail.tenant_id] %}
+                          {{ sfs_summary.summary_data.trunk_ids[detail.tenant_id][detail.ixn_id] }}
+                        {% else %}
+                          N/A
+                        {% endif %}
+                      </td>
+                    </tr>
+                    <tr>
+                      <td>Supervisor IDs</td>
+                      <td>
+                        {% if detail.tenant_id in sfs_summary.summary_data.supervisor_ids and detail.ixn_id in sfs_summary.summary_data.supervisor_ids[detail.tenant_id] %}
+                          {{ sfs_summary.summary_data.supervisor_ids[detail.tenant_id][detail.ixn_id] }}
+                        {% else %}
+                          N/A
+                        {% endif %}
+                      </td>
+                    </tr>
+                    {% endfor %}
+                    <tr>
+                      <td>Transfer Details</td>
+                      <td>{{ detail.transfer_details }}</td>
+                    </tr>
+                    <tr>
+                      <td>Conference Details</td>
+                      <td>{{ detail.conference_details }}</td>
+                    </tr>
+                  {% endfor %}
+                  <!-- Interaction Flow Details -->
+                  {% for vector_stat in se_summary.vector_stats %}
+                    <tr>
+                      <td>Interaction Flow ID</td>
+                      <td>{{ vector_stat.vector_id }}</td>
+                    </tr>
+                    <tr>
+                      <td>Total Execution Time (μs)</td>
+                      <td>{{ vector_stat.total_execution_time }}</td>
+                    </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+        
+      <!-- Interactions Section -->
+      
+      </div>
+    </div>
+
+    
+    <div class="table-separator"></div>
+
+    <div class="row">
+      <!-- SFS-IM Events Details -->
+      <div class="col-lg-6 mb-4">
+          <div class="card">
+              <div class="card-header">
+                  SFS - IM Events Details
+              </div>
+              <div class="card-body">
+                  <div class="table-responsive"> 
+                      <table id="interactionTable" class="table table-striped table-bordered">
+                          <thead>
+                              <tr>
+                                  <th>Event Name</th>
+                                  <th>SFS-IM Processing Time (ms)</th>
+                              </tr>
+                          </thead>
+                          <tbody>
+                              {% for tenant_id, tenant_data in sfs_summary.summary_data.imEvents_data.items() %}
+                                  {% for ixn_id, events in tenant_data.items() %}
+                                      {% for event in events %}
+                                          <tr>
+                                              <td>{{ event.sending_event.event_name }}</td>
+                                              <td>
+                                                  {% if event.processing_time != 99999999 %}
+                                                      {{ "{:.3f}".format(event.processing_time) }}
+                                                  {% else %}
+                                                      Missing
+                                                  {% endif %}
+                                              </td>
+                                          </tr>
+                                      {% endfor %}
+                                  {% endfor %}
+                              {% endfor %}
+                          </tbody>
+                      </table>
+                  </div>
+              </div>
+          </div>
+      </div>
+      <!-- IM-SFS Events Details -->
+      <div class="col-lg-6 mb-4">
+          <div class="card">
+              <div class="card-header">
+                  IM - SFS Events Details
+              </div>
+              <div class="card-body">
+                  <div class="table-responsive"> 
+                      <table id="interactionTable" class="table table-striped table-bordered">
+                          <thead>
+                              <tr>
+                                  <th>Event Name</th>
+                                  <th>IM-SFS Processing Time (ms)</th>
+                              </tr>
+                          </thead>
+                          <tbody>
+                              {% for tenant_id, tenant_data in im_summary.im_sfs_summary_data.sfsEvents_data.items() %}
+                                  {% for ixn_id, events in tenant_data.items() %}
+                                      {% for event in events %}
+                                          <tr>
+                                              <td>{{ event.receiving_event.event_name }}</td>
+                                              <td>
+                                                  {% if event.processing_time != "Missing or Incorrect Sending Event" %}
+                                                      {{ event.processing_time }}
+                                                  {% else %}
+                                                      Missing
+                                                  {% endif %}
+                                              </td>
+                                          </tr>
+                                      {% endfor %}
+                                  {% endfor %}
+                              {% endfor %}
+                          </tbody>
+                      </table>
+                  </div>
+              </div>
+          </div>
+      </div>
+    </div>
+
+    <!-- Add canvas elements for the line charts -->
+    <div class="row">
+      <div class="col-lg-6 mb-4">
+          <div class="card">
+              <div class="card-header">
+                  SFS-IM Events Processing Time
+              </div>
+              <div class="card-body">
+                  <canvas id="sfsImEventsChart" width="400" height="300"></canvas>
+              </div>
+          </div>
+      </div>
+      <div class="col-lg-6 mb-4">
+          <div class="card">
+              <div class="card-header">
+                  IM-SFS Events Processing Time
+              </div>
+              <div class="card-body">
+                  <canvas id="imSfsEventsChart" width="400" height="300"></canvas>
+              </div>
+          </div>
+      </div>
+    </div>
+
+
+    <div class="table-separator"></div>
+    <div class="row">
+      <!-- Summary Section -->
+      <div class="col-lg-6 mb-4">
+        <div class="card">
+            <div class="card-header">
+                IM - AMS Events Processing Time
+            </div>
+            <div class="card-body">
+              <canvas id="amsEventsChart" ></canvas>
+            </div>
+        </div>
+    </div>
+      <div class="col-lg-6 mb-4">
+        <div class="card">
+          <div class="card-header">
+            AMS Events Graph
+          </div>
+          <div class="card-body">
+            
+            <div class="table-responsive"> 
+              <table id="IMAMS" class="table table-striped table-bordered">
+                <thead>
+                  <tr>
+                    <th>IXN ID</th>
+                    <th>Tenant ID</th>
+                    <th>Agent ID</th>
+                    <th>Station ID</th>
+                    <th>Event Name</th>
+                    <th>Processing Time (ms)</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for tenant_id, ixn_data in im_summary.im_ams_event_details.paired_events.items() %}
+                      {% for ixn_id, events in ixn_data.items() %}
+                          {% for event in events %}
+                              {% for event_name, event_data in event.items() %}
+                                  <tr>
+                                      <td>{{ ixn_id }}</td>
+                                      <td>{{ event_data.sending_event.header.tenant_id }}</td>
+                                      <td>{{ event_data.sending_event.agent_id }}</td>
+                                      <td>{{ event_data.sending_event.header.station_id }}</td>
+                                      <td>{{ event_name }}</td>
+                                      <td>{{ "{:.3f}".format(event_data.processing_time) }}</td>
+                                  </tr>
+                              {% endfor %}
+                          {% endfor %}
+                      {% endfor %}
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  <!-- Add this canvas element for the line chart -->
+
+    
+
+
+
+   
+  </div>
+
+
+
+    <!-- Include JavaScript libraries and custom scripts -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <script>
+      $(document).ready(function(){
+        // Extract event names and processing times from your HTML template
+        var eventNames = [];
+        var processingTimes = [];
+
+        {% for tenant_id, ixn_data in im_summary.im_ams_event_details.paired_events.items() %}
+            {% for ixn_id, events in ixn_data.items() %}
+                {% for event in events %}
+                    {% for event_name, event_data in event.items() %}
+                        eventNames.push("{{ event_name }}");
+                        processingTimes.push({{ event_data.processing_time }});
+                    {% endfor %}
+                {% endfor %}
+            {% endfor %}
+        {% endfor %}
+
+        // Set up the chart
+        var ctx = document.getElementById('amsEventsChart').getContext('2d');
+        var amsEventsChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: eventNames,
+                datasets: [{
+                    label: 'Processing Time (ms)',
+                    data: processingTimes,
+                    borderColor: 'blue',
+                    borderWidth: 2,
+                    fill: false,
+                }]
+            },
+            options: {
+              responsive: true, // Make the chart responsive
+              maintainAspectRatio: true, // Allow the chart to resize freely
+              width: 800, // Set the width of the chart
+              height: 400,
+              // Other chart options
+                tooltips: {
+                    callbacks: {
+                        label: function(tooltipItem, data) {
+                            var datasetLabel = data.datasets[tooltipItem.datasetIndex].label || '';
+                            return datasetLabel + ': ' + tooltipItem.yLabel + ' ms';
+                        }
+                    }
+                },
+                scales: {
+                    yAxes: [{
+                        ticks: {
+                            beginAtZero: true
+                        },
+                        scaleLabel: {
+                            display: true,
+                            labelString: 'Processing Time (ms)'
+                        }
+                    }],
+                    xAxes: [{
+                        scaleLabel: {
+                            display: true,
+                            labelString: 'Event Name'
+                        }
+                    }]
+                }
+            }
+        });
+
+      });
+    </script>
+    <script>
+      $(document).ready(function(){
+          // Extract event names and processing times for SFS-IM events
+          var sfsImEventNames = [];
+          var sfsImProcessingTimes = [];
+  
+          {% for tenant_id, tenant_data in sfs_summary.summary_data.imEvents_data.items() %}
+              {% for ixn_id, events in tenant_data.items() %}
+                  {% for event in events %}
+                      sfsImEventNames.push("{{ event.sending_event.event_name }}");
+                      sfsImProcessingTimes.push({% if event.processing_time != 99999999 %}{{ event.processing_time }}{% else %}null{% endif %});
+                  {% endfor %}
+              {% endfor %}
+          {% endfor %}
+  
+          // Set up the SFS-IM events chart
+          var sfsImCtx = document.getElementById('sfsImEventsChart').getContext('2d');
+          var sfsImEventsChart = new Chart(sfsImCtx, {
+              type: 'line',
+              data: {
+                  labels: sfsImEventNames,
+                  datasets: [{
+                      label: 'SFS-IM Processing Time (ms)',
+                      data: sfsImProcessingTimes,
+                      borderColor: 'blue',
+                      borderWidth: 2,
+                      fill: false,
+                  }]
+              },
+              options: {
+                  responsive: true,
+                  maintainAspectRatio: false,
+                  scales: {
+                      yAxes: [{
+                          ticks: {
+                              beginAtZero: true
+                          },
+                          scaleLabel: {
+                              display: true,
+                              labelString: 'Processing Time (ms)'
+                          }
+                      }],
+                      xAxes: [{
+                          scaleLabel: {
+                              display: true,
+                              labelString: 'Event Name'
+                          }
+                      }]
+                  }
+              }
+          });
+  
+          // Extract event names and processing times for IM-SFS events
+          var imSfsEventNames = [];
+          var imSfsProcessingTimes = [];
+  
+          {% for tenant_id, tenant_data in im_summary.im_sfs_summary_data.sfsEvents_data.items() %}
+              {% for ixn_id, events in tenant_data.items() %}
+                  {% for event in events %}
+                      imSfsEventNames.push("{{ event.receiving_event.event_name }}");
+                      imSfsProcessingTimes.push({% if event.processing_time != "Missing or Incorrect Sending Event" %}{{ event.processing_time }}{% else %}null{% endif %});
+                  {% endfor %}
+              {% endfor %}
+          {% endfor %}
+  
+          // Set up the IM-SFS events chart
+          var imSfsCtx = document.getElementById('imSfsEventsChart').getContext('2d');
+          var imSfsEventsChart = new Chart(imSfsCtx, {
+              type: 'line',
+              data: {
+                  labels: imSfsEventNames,
+                  datasets: [{
+                      label: 'IM-SFS Processing Time (ms)',
+                      data: imSfsProcessingTimes,
+                      borderColor: 'green',
+                      borderWidth: 2,
+                      fill: false,
+                  }]
+              },
+              options: {
+                  responsive: true,
+                  maintainAspectRatio: false,
+                  scales: {
+                      yAxes: [{
+                          ticks: {
+                              beginAtZero: true
+                          },
+                          scaleLabel: {
+                              display: true,
+                              labelString: 'Processing Time (ms)'
+                          }
+                      }],
+                      xAxes: [{
+                          scaleLabel: {
+                              display: true,
+                              labelString: 'Event Name'
+                          }
+                      }]
+                  }
+              }
+          });
+      });
+  </script>
+  </body>
+
+</html>

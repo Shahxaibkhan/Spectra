@@ -9,6 +9,7 @@ from pages.se_page import SEPage
 from pages.sfs_page import SFSPage
 from pages.db_page import DBPage
 from pages.acdss_page import ACDSSPage
+from pages.ixn_page import IXNPage
 
 
 
@@ -19,6 +20,7 @@ se_page = SEPage(app)
 sfs_page = SFSPage(app)
 db_page = DBPage(app)
 acdss_page = ACDSSPage(app)
+ixntracking_page = IXNPage(app)
 
 
 
@@ -341,6 +343,15 @@ def analyze_sfsse():
 @app.route('/analyze/db')
 def analyze_db():
     return db_page.analyze() 
+
+@app.route('/analyze/ixntrack')
+def analyze_ixn_tracking():
+    return ixntracking_page.analyze() 
+
+@app.route('/ixn_details', methods=['POST'])
+def display_ixn_stats():
+    print("i am here 1")
+    return ixntracking_page.displayDetails() 
 
 
 @app.route('/Display_Database_stats', methods=['POST'])

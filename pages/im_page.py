@@ -84,14 +84,14 @@ class IMPage(BasePage):
         logs = fetch_log_files(host, username, password, logs_path)
 
         if logs is not None:
-            print("Logs Found")
-            print("-" * 50)
             return logs
         else:
             print("Failed to fetch logs. Check SSH connection.")
             return None
 
-    
+    def generate_ixn_stats(self,log_file,ixn):
+        return self.generate_summary_report(log_file,ixn)
+
     def generate_im_stats(self,log_file):
         # Generate summary report
         summary_data = self.generate_summary_report(log_file)
@@ -103,12 +103,12 @@ class IMPage(BasePage):
             im_sfs_summary_data=summary_data['im_sfs_summary_data']
         )
 
-    def generate_summary_report(self,logs):
-        im_ams_jsonLogs = self.fetch_im_ams_json_logs(logs)
+    def generate_summary_report(self,logs, ixn=None):
+        im_ams_jsonLogs = self.fetch_im_ams_json_logs(logs,ixn)
         im_ams_event_details = self.fetch_im_ams_event_details(im_ams_jsonLogs)
         im_ams_processing_details = self.fetch_im_ams_processing_details(im_ams_event_details['paired_events'])
 
-        im_sfs_jsonLogs = self.fetch_im_sfs_json_logs(logs)
+        im_sfs_jsonLogs = self.fetch_im_sfs_json_logs(logs,ixn)
     
 
         # Call the sfs_im_events_processing function to get imEvents_data
@@ -350,12 +350,12 @@ class IMPage(BasePage):
             return None  # If no corresponding receiving event found
 
 
-    def fetch_im_ams_json_logs(self,log_file):
-        sorted_im_ams_logs = self.fetch_im_ams_sorted_logs(log_file)
+    def fetch_im_ams_json_logs(self,log_file, ixn=None):
+        sorted_im_ams_logs = self.fetch_im_ams_sorted_logs(log_file, ixn)
         return self.convert_im_ams_logs_to_json(sorted_im_ams_logs)
 
-    def fetch_im_sfs_json_logs(self,log_file):
-        sorted_im_sfs_logs = self.fetch_im_sfs_sorted_logs(log_file)
+    def fetch_im_sfs_json_logs(self,log_file, ixn=None):
+        sorted_im_sfs_logs = self.fetch_im_sfs_sorted_logs(log_file,ixn)
         return self.convert_im_sfs_logs_to_json(sorted_im_sfs_logs)
 
     def convert_im_sfs_logs_to_json(self, sorted_logs):
@@ -484,10 +484,10 @@ class IMPage(BasePage):
             'event_occurrences': event_occurrences,
         }
 
-        # jsonLogs = json.dumps(result_data, indent=2)
-        # output_file_path = "custom_output.json"
-        # with open(output_file_path, 'w') as output_file:
-        #     output_file.write(jsonLogs)
+        jsonLogs = json.dumps(result_data, indent=2)
+        output_file_path = "ams_output.json"
+        with open(output_file_path, 'w') as output_file:
+            output_file.write(jsonLogs)
         return result_data
 
 
@@ -582,20 +582,20 @@ class IMPage(BasePage):
          
 
 
-    def fetch_im_ams_sorted_logs(self,log_file):
-        parsed_log_file = [self.parse_im_ams_logs(log) for log in log_file if self.parse_im_ams_logs(log) is not None]
+    def fetch_im_ams_sorted_logs(self,log_file, ixn=None):
+        parsed_log_file = [self.parse_im_ams_logs(log, ixn) for log in log_file if self.parse_im_ams_logs(log,ixn) is not None]
 
         # Check if any logs were parsed
         if not parsed_log_file:
             # Handle the case when no logs were parsed
             return []
 
-        sorted_logs = sorted(parsed_log_file, key=lambda x: (x['ixnid'], x['event_name'], x['agent_id'] if x['agent_id'] is not None else 0, x['tenant_id'], x['timestamp']))
+        sorted_logs = sorted(parsed_log_file, key=lambda x: (x['ixnid'], x['tenant_id'], x['timestamp'], x['event_name'], x['agent_id'] if x['agent_id'] is not None else 0))
 
         return sorted_logs
 
-    def fetch_im_sfs_sorted_logs(self, log_file):
-        parsed_log_file = [result for log in log_file if (result := self.parse_im_sfs_logs(log)) is not None]
+    def fetch_im_sfs_sorted_logs(self, log_file, ixn=None):
+        parsed_log_file = [result for log in log_file if (result := self.parse_im_sfs_logs(log,ixn)) is not None]
 
         # Check if any logs were parsed
         if not parsed_log_file:
@@ -606,8 +606,8 @@ class IMPage(BasePage):
             
             x['tenant_id'],
             x['ixnid'],
-            x['event_name'],
             x['timestamp'],
+            x['event_name'],
             x['agent_id'],
             x['trunk_extension'],
             x['supervisor_id']
@@ -703,104 +703,108 @@ class IMPage(BasePage):
 
 
 
-    def parse_im_ams_logs(self,log):
+    def parse_im_ams_logs(self,log, ixn=None):
         match = re.search(r'(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2},\d+) +\d+ +DEBUG: \[ {tenant:(\d+), ixn:(\d+)} \[im\.flow\] (<-|->) ams: (.+?)\]~~', log)
 
         if match:
-            timestamp = match.group(1)
-            tenant_id = match.group(2)
             ixn_id = match.group(3)
-            arrow_direction = match.group(4)
-            
-            # Check if there is a match for group(5)
-            ams_data = match.group(5) if len(match.groups()) >= 5 else None
+            if ixn is None or ixn_id == str(ixn):
+                timestamp = match.group(1)
+                tenant_id = match.group(2)
+                
+                arrow_direction = match.group(4)
+                
+                # Check if there is a match for group(5)
+                ams_data = match.group(5) if len(match.groups()) >= 5 else None
 
 
-            # Use a regular expression to capture content inside parentheses and event name
-            ams_match = re.search(r'(\w+) \((.*?)\)', ams_data)
+                # Use a regular expression to capture content inside parentheses and event name
+                ams_match = re.search(r'(\w+) \((.*?)\)', ams_data)
 
-            if ams_match:
-                ams_event_name = ams_match.group(1)
-                headers = ams_match.group(2)
+                if ams_match:
+                    ams_event_name = ams_match.group(1)
+                    headers = ams_match.group(2)
 
-                # Extract ams_agent_id from headers
-                ams_agent_id_match = re.search(r'agent_id:(\d+)', headers)
-                ams_agent_id = ams_agent_id_match.group(1) if ams_agent_id_match else None
+                    # Extract ams_agent_id from headers
+                    ams_agent_id_match = re.search(r'agent_id:(\d+)', headers)
+                    ams_agent_id = ams_agent_id_match.group(1) if ams_agent_id_match else None
 
 
 
-            output =  {
-                'timestamp': timestamp,
-                'tenant_id': int(tenant_id),
-                'ixnid': int(ixn_id),
-                'arrow_direction' : arrow_direction,
-                'event_name': ams_event_name,
-                'agent_id': int(ams_agent_id),
-                'header': headers,
-            }
-            return output
+                output =  {
+                    'timestamp': timestamp,
+                    'tenant_id': int(tenant_id),
+                    'ixnid': int(ixn_id),
+                    'arrow_direction' : arrow_direction,
+                    'event_name': ams_event_name,
+                    'agent_id': int(ams_agent_id),
+                    'header': headers,
+                }
+                return output
 
 
         return None
 
 
-    def parse_im_sfs_logs(self, log):
+    def parse_im_sfs_logs(self, log, ixn=None):
         match = re.search(r'(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2},\d+) +\d+ +DEBUG: \[ {tenant:(\d+), ixn:(\d+)(?:, (agent|extrunk|supervisor): *(\d+))?} \[im\.flow\] (<-|->) client: (.+?)\]~~', log)
 
         if match:
-            timestamp = match.group(1)
-            tenant_id = match.group(2)
             ixn_id = match.group(3)
-            agent_type = match.group(4)
-            if agent_type == 'agent':
-                agent_id = match.group(5) if match.group(5) else None
-                trunk_extension = None
-                supervisor_id = None
-            elif agent_type == 'extrunk':
-                trunk_extension = match.group(5) if match.group(5) else None
-                agent_id = None
-                supervisor_id = None
-            elif agent_type == 'supervisor':
-                supervisor_id = match.group(5) if match.group(5) else None
-                agent_id = None
-                trunk_extension = None
-            else:
-                supervisor_id = None
-                agent_id = None
-                trunk_extension = None
+            if ixn is None or ixn_id == str(ixn):
+                timestamp = match.group(1)
+                tenant_id = match.group(2)
+                ixn_id = match.group(3)
+                agent_type = match.group(4)
+                if agent_type == 'agent':
+                    agent_id = match.group(5) if match.group(5) else None
+                    trunk_extension = None
+                    supervisor_id = None
+                elif agent_type == 'extrunk':
+                    trunk_extension = match.group(5) if match.group(5) else None
+                    agent_id = None
+                    supervisor_id = None
+                elif agent_type == 'supervisor':
+                    supervisor_id = match.group(5) if match.group(5) else None
+                    agent_id = None
+                    trunk_extension = None
+                else:
+                    supervisor_id = None
+                    agent_id = None
+                    trunk_extension = None
+                    
+                arrow_direction = match.group(6)
+                status = 'sending' if arrow_direction == '->' else 'receiving'
+
+                # Check if there is a match for group(6)
+                client_data = match.group(7) if len(match.groups()) >= 6 else None
+
+                # Use a regular expression to capture content inside parentheses and event name
+                client_match = re.search(r'(\w+) \((.*?)\)', client_data)
+
+                if client_match:
+                    client_event_name = client_match.group(1)
+                    headers = client_match.group(2)
+                    # Extract key-value pairs from the header string by splitting only the first colon
+                    header_pairs = [pair.strip().split(':', 1) for pair in headers.split(',') if pair.strip() and not pair.strip().startswith('header:')]
+                    header_obj = dict((key.strip(), value.strip()) for key, value in header_pairs)
+
+
                 
-            arrow_direction = match.group(6)
-            status = 'sending' if arrow_direction == '->' else 'receiving'
-
-            # Check if there is a match for group(6)
-            client_data = match.group(7) if len(match.groups()) >= 6 else None
-
-            # Use a regular expression to capture content inside parentheses and event name
-            client_match = re.search(r'(\w+) \((.*?)\)', client_data)
-
-            if client_match:
-                client_event_name = client_match.group(1)
-                headers = client_match.group(2)
-                # Extract key-value pairs from the header string by splitting only the first colon
-                header_pairs = [pair.strip().split(':', 1) for pair in headers.split(',') if pair.strip() and not pair.strip().startswith('header:')]
-                header_obj = dict((key.strip(), value.strip()) for key, value in header_pairs)
-
-
-               
-                output = {
-                    'timestamp': timestamp,
-                    'tenant_id': tenant_id,
-                    'ixnid': ixn_id,
-                    'agent_type':agent_type,
-                    'agent_id': agent_id,
-                    'trunk_extension': trunk_extension,
-                    'supervisor_id': supervisor_id,
-                    'arrow_direction': arrow_direction,
-                    'event_name': client_event_name,
-                    'status' : status,
-                    'header': header_obj,
-                }
-                return output
+                    output = {
+                        'timestamp': timestamp,
+                        'tenant_id': tenant_id,
+                        'ixnid': ixn_id,
+                        'agent_type':agent_type,
+                        'agent_id': agent_id,
+                        'trunk_extension': trunk_extension,
+                        'supervisor_id': supervisor_id,
+                        'arrow_direction': arrow_direction,
+                        'event_name': client_event_name,
+                        'status' : status,
+                        'header': header_obj,
+                    }
+                    return output
 
         return None
 

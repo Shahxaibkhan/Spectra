@@ -94,6 +94,20 @@ class SFSPage(BasePage):
             print("Failed to fetch logs. Check SSH connection.")
             return None
 
+    def generate_sfs_ixn_stats(self,log_file):
+        return self.generate_ixn_stats(log_file)
+    
+    def generate_ixn_stats(self,log_file,ixn):
+        sorted_logs = self.call_processed_logs(log_file,ixn)
+        # Convert logs to JSON
+        logs_json = self.convert_sfsim_logs_to_json(sorted_logs)
+
+        summary_data = self.generate_summary_report(logs_json)
+        detailed_summary = self.generate_detailed_report(logs_json)
+
+        return summary_data , detailed_summary
+    
+    
     def generate_stats(self):
         log_file = self.file_upload_and_processing_logs()
         return self.generate_sfs_stats(log_file)
@@ -575,17 +589,16 @@ class SFSPage(BasePage):
         return json_string
 
 
-    def call_processed_logs(self,log_file):
-            parsed_log_file = [result for log in log_file if (result := self.parse_sfsim_logs(log)) is not None]
-            
-            if not parsed_log_file:
-                # Handle the case when no logs were parsed
-                return []
+    def call_processed_logs(self, log_file, ixn=None):
+        parsed_log_file = [result for log in log_file if (result := self.parse_sfsim_logs(log, ixn)) is not None]
+        
+        if not parsed_log_file:
+            # Handle the case when no logs were parsed
+            return []
 
-            sorted_logs = sorted(parsed_log_file, key=lambda x: (x['ixn_id'], x['tenant_id'], x['timestamp'],x['event'], x['agent_id'],x['trunk_extension'],x['supervisor_id']))
+        sorted_logs = sorted(parsed_log_file, key=lambda x: (x['ixn_id'], x['tenant_id'], x['timestamp'],x['event'], x['agent_id'],x['trunk_extension'],x['supervisor_id']))
 
-            
-            return sorted_logs
+        return sorted_logs
 
 
 
@@ -645,61 +658,69 @@ class SFSPage(BasePage):
 
   
 
-    def parse_sfsim_logs(self, log):
+    def parse_sfsim_logs(self, log, ixn=None):
         result = {}
 
         pattern = re.compile(r'(?P<timestamp>\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2},\d{6})\s+(?P<log_level>\d+)\s+DEBUG:\s+\[\s+{tenant:(?P<tenant_id>\d+),\s+ixn:(?P<ixn_id>\d+)(?:,\s+(?P<agent_type>agent|extrunk|supervisor): *(?P<agent_value>\d+))?.*?\]\s+(?P<arrow><-|->)\s+im:\s+(?P<event>\w+)\s+\(header:(?P<header>[^~]+)\)\s.*?~~')
-        # pattern = re.compile(r'(?P<timestamp>\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2},\d{6})\s+(?P<log_level>\d+)\s+DEBUG:\s+\[\s+{tenant:(?P<tenant_id>\d+),\s+ixn:(?P<ixn_id>\d+),\s+(?P<agent_type>agent|extrunk|supervisor): *(?P<agent_value>\d+)(?:,\s+.*?)*?\]\s+(?P<arrow><-|->)\s+im:\s+(?P<event>\w+)\s+\(header:(?P<header>[^~]+)\)\s.*?~~')
 
         match = re.search(pattern, log)
 
+        # pattern = re.compile(r'(?P<timestamp>\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2},\d{6})\s+(?P<log_level>\d+)\s+DEBUG:\s+\[\s+{tenant:(?P<tenant_id>\d+),\s+ixn:(?P<ixn_id>\d+)(?:,\s+(?P<agent_type>agent|extrunk|supervisor): *(?P<agent_value>\d+))?.*?\]\s+(?P<arrow><-|->)\s+im:\s+(?P<event>\w+)\s+\(header:(?P<header>[^~]+)\)\s.*?~~')
+        # # pattern = re.compile(r'(?P<timestamp>\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2},\d{6})\s+(?P<log_level>\d+)\s+DEBUG:\s+\[\s+{tenant:(?P<tenant_id>\d+),\s+ixn:(?P<ixn_id>\d+),\s+(?P<agent_type>agent|extrunk|supervisor): *(?P<agent_value>\d+)(?:,\s+.*?)*?\]\s+(?P<arrow><-|->)\s+im:\s+(?P<event>\w+)\s+\(header:(?P<header>[^~]+)\)\s.*?~~')
+
+        # match = re.search(pattern, log)
+
         if match:
-            timestamp = match.group('timestamp')
-            tenant_id = match.group('tenant_id')
             ixn_id = match.group('ixn_id')
-            agent_type = match.group('agent_type')
-            agent_value = match.group('agent_value')
-            log_level = match.group('log_level')
-            status = 'sending' if match.group('arrow') == '->' else 'receiving'
-            event = match.group('event')
-            header_str = match.group('header')
 
-            if agent_type == 'agent':
-                agent_id = agent_value
-                trunk_extension = None
-                supervisor_id = None
-            elif agent_type == 'extrunk':
-                trunk_extension = agent_value
-                agent_id = None
-                supervisor_id = None
-            elif agent_type == 'supervisor':
-                supervisor_id = agent_value
-                agent_id = None
-                trunk_extension = None
-            else:
-                supervisor_id = None
-                agent_id = None
-                trunk_extension = None
+            # Check if ixn parameter is provided and ixn_id matches it
+            if ixn is None or ixn_id == str(ixn):
+                timestamp = match.group('timestamp')
+                tenant_id = match.group('tenant_id')
+                ixn_id = ixn if ixn else match.group('ixn_id')
+                agent_type = match.group('agent_type')
+                agent_value = match.group('agent_value')
+                log_level = match.group('log_level')
+                status = 'sending' if match.group('arrow') == '->' else 'receiving'
+                event = match.group('event')
+                header_str = match.group('header')
 
-            # Extract key-value pairs from the header string by splitting only the first colon
-            header_pairs = [pair.strip().split(':', 1) for pair in header_str.split(',') if pair.strip()]
-            header_obj = dict((key.strip(), value.strip()) for key, value in header_pairs)
+                if agent_type == 'agent':
+                    agent_id = agent_value
+                    trunk_extension = None
+                    supervisor_id = None
+                elif agent_type == 'extrunk':
+                    trunk_extension = agent_value
+                    agent_id = None
+                    supervisor_id = None
+                elif agent_type == 'supervisor':
+                    supervisor_id = agent_value
+                    agent_id = None
+                    trunk_extension = None
+                else:
+                    supervisor_id = None
+                    agent_id = None
+                    trunk_extension = None
 
-            result['timestamp'] = timestamp
-            result['tenant_id'] = tenant_id
-            result['supervisor_id'] = supervisor_id
-            result['trunk_extension'] = trunk_extension
-            result['ixn_id'] = ixn_id
-            result['agent_id'] = agent_id
-            result['log_level'] = log_level
-            result['status'] = status
-            result['event'] = event
-            result['header'] = header_obj
+                # Extract key-value pairs from the header string by splitting only the first colon
+                header_pairs = [pair.strip().split(':', 1) for pair in header_str.split(',') if pair.strip()]
+                header_obj = dict((key.strip(), value.strip()) for key, value in header_pairs)
 
-            # print(f"Timestamp: {timestamp}, Tenant ID: {tenant_id}, Ixn ID: {ixn_id}, Agent ID: {agent_id}, Log Level: {log_level}, Event: {event}")
-            # print(f"Header as Object: {json.dumps(header_obj, indent=2)}")
-            # print("=" * 50)
+                result['timestamp'] = timestamp
+                result['tenant_id'] = tenant_id
+                result['supervisor_id'] = supervisor_id
+                result['trunk_extension'] = trunk_extension
+                result['ixn_id'] = ixn_id
+                result['agent_id'] = agent_id
+                result['log_level'] = log_level
+                result['status'] = status
+                result['event'] = event
+                result['header'] = header_obj
 
-            return result
+                # print(f"Timestamp: {timestamp}, Tenant ID: {tenant_id}, Ixn ID: {ixn_id}, Agent ID: {agent_id}, Log Level: {log_level}, Event: {event}, Header: {header_obj}")
+                # # print(f"Header as Object: {json.dumps(header_obj, indent=2)}")
+                # print("=" * 50)
+
+                return result
 
         return None

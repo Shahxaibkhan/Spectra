@@ -107,6 +107,19 @@ class SEPage(BasePage):
         # Return the generated summary report to be displayed in the HTML template
         return render_template('se_stats.html', summary_report=summary_report)
   
+    def generate_ixn_stats(self,log_file,ixn):
+        vector_stats = self.generate_vector_stats(log_file,ixn)
+
+        # Extract unique vector_ids from vector_stats and count occurrences
+        vector_id_counts = {}
+        for entry in vector_stats:
+            vector_id = entry.get('vector_id')
+            if vector_id:
+                vector_id_counts[vector_id] = vector_id_counts.get(vector_id, 0) + 1
+
+        total_vectors = len(vector_id_counts)
+        return vector_stats , total_vectors
+    
 
     def generate_summary_report(self,log_file):
         vector_stats = self.generate_vector_stats(log_file)
@@ -592,9 +605,9 @@ class SEPage(BasePage):
         return vector_stats
 
 
-    def generate_vector_stats(self,log_file):
+    def generate_vector_stats(self,log_file, ixn=None):
         # Get processed logs
-        sorted_logs = self.vectors_processed_logs(log_file)
+        sorted_logs = self.vectors_processed_logs(log_file, ixn)
 
         vector_stats = []
 
@@ -677,10 +690,10 @@ class SEPage(BasePage):
         return logs_json
 
 
-    def vectors_processed_logs(self,log_file):
+    def vectors_processed_logs(self,log_file, ixn=None):
             
 
-            parsed_vector_logs = [result for log in log_file if (result := self.parse_vector_log(log)) is not None]
+            parsed_vector_logs = [result for log in log_file if (result := self.parse_vector_log(log, ixn)) is not None]
 
             # Check if any logs were parsed
             if not parsed_vector_logs:
@@ -728,34 +741,39 @@ class SEPage(BasePage):
 
 
 
-    def parse_vector_log(self,log):
+    def parse_vector_log(self,log, ixn=None):
             search_pattern = r'(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2},\d{3}) \[\d+\]  DEBUG: \[ VectorScript::executeVectorSteps: > Time taken for script execution:(\d+) usecs\. CallID:(\d+\|\d+\.\d+\.\d+), VecID:(\d+\|\d+\.\d+\.\d+), isLastStep:(true|false), executionIndex:(\d+) \]~~'
             log_pattern = re.compile(search_pattern)
             logpattern_match = log_pattern.search(log)
 
             if logpattern_match:
                 result = {}  # Object to store the extracted values
-
-                result["matched_string"] = logpattern_match.group()
-                result["timestamp"] = logpattern_match.group(1)
-                result["execution_time"] = int(logpattern_match.group(2))
-
                 call_id_tenant_str = logpattern_match.group(3)
-                result["call_id_tenant_str"] = call_id_tenant_str
                 result["tenant_id"], result["call_id"] = map(int, call_id_tenant_str.split('|')[1].split('.')[0:3:2])
+                
+                if ixn is None or result["call_id"] == int(ixn):
+                
 
-                vector_id_tenant_str = logpattern_match.group(4)
-                result["vector_id_tenant_str"] = vector_id_tenant_str
-                result["vector_id"] = int(vector_id_tenant_str.split('|')[1].split('.')[2])
+                    result["matched_string"] = logpattern_match.group()
+                    result["timestamp"] = logpattern_match.group(1)
+                    result["execution_time"] = int(logpattern_match.group(2))
 
-                result["is_last_step"] = logpattern_match.group(5).lower() == "true"
-                result["execution_index"] = int(logpattern_match.group(6))
+                    call_id_tenant_str = logpattern_match.group(3)
+                    result["call_id_tenant_str"] = call_id_tenant_str
+                    result["tenant_id"], result["call_id"] = map(int, call_id_tenant_str.split('|')[1].split('.')[0:3:2])
 
-                # Include a key "first_step" set to True if execution index is 0, else False
-                result["first_step"] = result["execution_index"] == 0
+                    vector_id_tenant_str = logpattern_match.group(4)
+                    result["vector_id_tenant_str"] = vector_id_tenant_str
+                    result["vector_id"] = int(vector_id_tenant_str.split('|')[1].split('.')[2])
+
+                    result["is_last_step"] = logpattern_match.group(5).lower() == "true"
+                    result["execution_index"] = int(logpattern_match.group(6))
+
+                    # Include a key "first_step" set to True if execution index is 0, else False
+                    result["first_step"] = result["execution_index"] == 0
 
 
-                return result
+                    return result
 
             # If no match is found, return None'
             return None
