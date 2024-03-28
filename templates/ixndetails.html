@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>S.P.E.C.T.R.A. - IXN Logs Analyzer</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f4f4f4;
+            text-align: center;
+            padding: 20px;
+            margin: 0;
+        }
+        form {
+            margin: 0 auto;
+            max-width: 400px;
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #555;
+        }
+        input {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 15px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        input[type="submit"] {
+            background-color: #800000;
+            color: #fff;
+            cursor: pointer;
+        }
+        input[type="submit"]:hover {
+            background-color: rgb(67, 9, 9);
+        }
+        #ixn_id, #tenant_id {
+            border: 1px solid #800000;
+            display: inline-block;
+            width: calc(50% - 5px);
+            margin-right: 10px;
+        }
+    </style>
+</head>
+<body>
+    <h1>IXN Tracking</h1>
+    <form method="post" action="/ixn_details" enctype="multipart/form-data">
+        <div style="display: flex;">
+            <div>
+                <label for="ixn_id">IXN ID:</label>
+                <input type="text" id="ixn_id" name="ixn_id" required="" style="width: auto;">
+            </div>
+            <div>
+                <label for="tenant_id">Tenant ID:</label>
+                <input type="text" id="tenant_id" name="tenant_id" required="" style="width: auto;margin-left: 20px;">
+            </div>
+        </div>
+        <br>
+        <label for="sfs_file">SFS Log File:</label>
+        <input type="file" name="sfs_file" accept=".log">
+        <br>
+        <label for="im_file">IM Log File:</label>
+        <input type="file" name="im_file" accept=".log">
+        <br>
+        <label for="se_file">SE Log File:</label>
+        <input type="file" name="se_file" accept=".log">
+        <input type="submit" value="Display Details">
+    </form>
+    <footer>
+        Utility developed by Shahzaib Khan
+    </footer>
+</body>
+</html>
